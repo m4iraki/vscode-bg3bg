@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
+import { Commands } from './commands';
+import { MyTreeProvider } from './action';
+import { initIdentifiers } from './identifiers';
 
 export function activate(context: vscode.ExtensionContext) {
-	console.log('Congratulations, your extension "helloworld-sample" is now active!');
+  const MainTreeProvider = new MyTreeProvider('bg3bg.main');
+  initIdentifiers(MainTreeProvider);
 
-	const disposable = vscode.commands.registerCommand('extension.helloWorld', () => {
-		vscode.window.showInformationMessage('Hello World!');
-	});
-
-	context.subscriptions.push(disposable);
+  Commands.init(context);
+  MainTreeProvider.init();
 }
+
+export function deactivate() { }

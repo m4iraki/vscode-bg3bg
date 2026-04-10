@@ -16,10 +16,40 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "extension.helloWorld",
-				"title": "Hello World"
+				"command": "extension.generateUUID",
+				"title": "Generate UUID"
+			},
+			{
+				"command": "extension.generateHandle",
+				"title": "Generate Handle"
+			},
+			{
+				"command": "extension.regenerateSelected",
+				"title": "Regenerate Selected Id"
+			},
+			{
+				"command": "extension.regenerateAllIds",
+				"title": "Regenerate All Ids"
 			}
-		]
+		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "bg3bg",
+					"title": "BG3 Banks Helper",
+					"icon": "resources/bhaal-logo2.png"
+				}
+			]
+		},
+		"views": {
+			"bg3bg": [
+				{
+					"id": "bg3bg.main",
+					"name": "BG3 Banks Helper",
+					"icon": "$()"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
@@ -31,9 +61,13 @@
 		"@eslint/js": "^9.13.0",
 		"@stylistic/eslint-plugin": "^2.9.0",
 		"@types/node": "^22",
+		"@types/uuid": "^10.0.0",
 		"@types/vscode": "^1.100.0",
 		"eslint": "^9.13.0",
 		"typescript": "^5.8.2",
 		"typescript-eslint": "^8.26.0"
+	},
+	"dependencies": {
+		"uuid": "^13.0.0"
 	}
 }
