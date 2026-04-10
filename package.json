@@ -16,19 +16,19 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "extension.generateUUID",
+				"command": "bg3bg.generateUUID",
 				"title": "Generate UUID"
 			},
 			{
-				"command": "extension.generateHandle",
+				"command": "bg3bg.generateHandle",
 				"title": "Generate Handle"
 			},
 			{
-				"command": "extension.regenerateSelected",
+				"command": "bg3bg.regenerateSelected",
 				"title": "Regenerate Selected Id"
 			},
 			{
-				"command": "extension.regenerateAllIds",
+				"command": "bg3bg.regenerateAllIds",
 				"title": "Regenerate All Ids"
 			}
 		],

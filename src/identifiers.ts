@@ -5,19 +5,19 @@ import { MyTreeProvider } from './action';
 
 export function initIdentifiers(treeProvider: MyTreeProvider) {
     const generateUUID: Command = Commands.add(new Command(
-        'extension.generateUUID',
+        'bg3bg.generateUUID',
         () => generateToClipboard(util.newUUID, "UUID")));
 
     const generateHandle: Command = Commands.add(new Command(
-        'extension.generateHandle',
+        'bg3bg.generateHandle',
         () => generateToClipboard(util.newHandle, "handle")));
 
     const regenerateSelected: Command = Commands.create(
-        'extension.regenerateSelected',
+        'bg3bg.regenerateSelected',
         handleGlobalReplace);
 
     const regenerateAll: Command = Commands.create(
-        'extension.regenerateAllIds',
+        'bg3bg.regenerateAllIds',
         () => { });
 
     treeProvider.create('Generate UUID', generateUUID);
