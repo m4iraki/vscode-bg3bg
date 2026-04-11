@@ -146,9 +146,7 @@ async function replaceIdentifiersInProject(
     edit: vscode.WorkspaceEdit,
     map: Record<string, string>,
 ): Promise<boolean> {
-    const fileUris = await vscode.workspace.findFiles(
-        '**/*.{txt,lsx,xml}',
-        '**/toolkitified/**');
+    const fileUris = await util.findFiles();
     const processingTasks = fileUris.map(async (uri) => {
         try {
             const document = await vscode.workspace.openTextDocument(uri);

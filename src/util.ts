@@ -28,10 +28,17 @@ const logActions: Record<LogLevel, LogFuction> = {
     },
 };
 
-export function newHandle() {
+export function newHandle(): string {
     return `h${uuidv4().replaceAll('-', 'g')}`;
 }
 
-export function newUUID() {
+export function newUUID(): string {
     return uuidv4();
+}
+
+export function findFiles(): Thenable<vscode.Uri[]> {
+    return vscode.workspace.findFiles(
+            '**/*.{txt,lsx,loca.xml}',
+            '{**/toolkitified/**,**/*.lsf.lsx}',
+        );
 }

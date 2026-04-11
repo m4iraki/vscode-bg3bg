@@ -45,7 +45,12 @@
 			"bg3bg": [
 				{
 					"id": "bg3bg.main",
-					"name": "BG3 Banks Helper",
+					"name": "Helpers",
+					"icon": "$()"
+				},
+				{
+					"id": "bg3bg.explorer",
+					"name": "Entities",
 					"icon": "$()"
 				}
 			]
@@ -61,13 +66,19 @@
 		"@eslint/js": "^9.13.0",
 		"@stylistic/eslint-plugin": "^2.9.0",
 		"@types/node": "^22",
+		"@types/sax": "^1.2.7",
 		"@types/uuid": "^10.0.0",
 		"@types/vscode": "^1.100.0",
+		"@types/xml2js": "^0.4.14",
 		"eslint": "^9.13.0",
 		"typescript": "^5.8.2",
 		"typescript-eslint": "^8.26.0"
 	},
 	"dependencies": {
-		"uuid": "^13.0.0"
+		"@rgrove/parse-xml": "^4.2.0",
+		"fast-xml-parser": "^5.5.11",
+		"sax": "^1.6.0",
+		"uuid": "^13.0.0",
+		"xml2js": "^0.6.2"
 	}
 }
