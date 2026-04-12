@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as util from './util';
-import {LsxEntitiy, LsxParser} from './lsx';
+import { LsxEntitiy, LsxParser } from './lsx';
 
 //todo non-lsx entities (loca, stats)
 type EntityType = string;
@@ -34,10 +34,12 @@ export class EntityCache {
     }
 
     public removeFile(uri: vscode.Uri): void {
+        const uriStr = uri.toString();
         for (const r of this.cache.keys()) {
             const list = this.cache.get(r);
             if (list) {
-                const filtered = list.filter(e => e.document.uri !== uri);
+                const filtered = list.filter(
+                    e => e.document.uri.toString() !== uriStr);
                 if (filtered.length === 0) {
                     this.cache.delete(r);
                 } else {
@@ -55,8 +57,8 @@ export class EntityCache {
     static fileFilter(document: vscode.TextDocument): boolean {
         for (const ext of this.extensions) {
             if (
-                document.fileName.endsWith(ext) &&
-                !document.fileName.endsWith('.lsf' + ext)
+                document.fileName.endsWith(ext) //&&
+                // !document.fileName.endsWith('.lsf' + ext)
             ) {
                 return true;
             }

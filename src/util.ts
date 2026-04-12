@@ -39,6 +39,6 @@ export function newUUID(): string {
 export function findFiles(): Thenable<vscode.Uri[]> {
     return vscode.workspace.findFiles(
             '**/*.{txt,lsx,loca.xml}',
-            '{**/toolkitified/**,**/*.lsf.lsx}',
+            '{**/toolkitified/**}',
         );
 }
