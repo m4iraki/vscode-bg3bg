@@ -5,7 +5,8 @@ export class ActionItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
         public readonly _command: Command,
-        public readonly collapsibleState: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.None
+        public readonly collapsibleState: vscode.TreeItemCollapsibleState =
+            vscode.TreeItemCollapsibleState.None
     ) {
 
         super(label, collapsibleState);
@@ -17,7 +18,8 @@ export class ActionItem extends vscode.TreeItem {
         };
     }
 }
-export class MyTreeProvider implements vscode.TreeDataProvider<ActionItem> {
+export class ActionsTreeProvider
+    implements vscode.TreeDataProvider<ActionItem> {
     constructor(public readonly viewId: string) { }
     _children: ActionItem[] = [];
     init() {

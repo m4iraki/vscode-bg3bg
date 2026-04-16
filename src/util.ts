@@ -38,7 +38,47 @@ export function newUUID(): string {
 
 export function findFiles(): Thenable<vscode.Uri[]> {
     return vscode.workspace.findFiles(
-            '**/*.{txt,lsx,loca.xml}',
-            '{**/toolkitified/**}',
+        '**/*.{txt,lsx,loca.xml}',
+        '{**/toolkitified/**,**/tmp_toolkitify/**}',
+    );
+}
+
+export async function dirExists(uri: vscode.Uri): Promise<boolean> {
+    return exists(uri, vscode.FileType.Directory);
+}
+
+export async function fileExists(uri: vscode.Uri): Promise<boolean> {
+    return exists(uri, vscode.FileType.File);
+}
+
+export async function exists(
+    uri: vscode.Uri,
+    tpe: vscode.FileType,
+): Promise<boolean> {
+    try {
+        const fileStat = await vscode.workspace.fs.stat(uri);
+        return fileStat.type === tpe;
+    } catch {
+        return false;
+    }
+}
+
+export function rootFolder(): vscode.Uri | undefined {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+        return;
+    }
+    return workspaceFolders[0].uri;
+}
+
+export async function rmrfDirectory(uri: vscode.Uri): Promise<void> {
+    if (await dirExists(uri)) {
+        await vscode.workspace.fs.delete(
+            uri,
+            {
+                recursive: true,
+                useTrash: false
+            }
         );
+    }
 }

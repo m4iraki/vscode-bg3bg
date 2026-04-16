@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import * as util from './util';
 import { Command, Commands } from './commands';
-import { MyTreeProvider } from './action';
+import { ActionsTreeProvider } from './action';
 
-export function initIdentifiers(treeProvider: MyTreeProvider) {
+export function initIdentifiers(treeProvider: ActionsTreeProvider) {
     const generateUUID: Command = Commands.add(new Command(
         'bg3bg.generateUUID',
         () => generateToClipboard(util.newUUID, "UUID")));
@@ -112,7 +112,7 @@ function getSelectedIdentifier(editor: vscode.TextEditor): string | undefined {
         const position = editor.selection.active;
         const range = editor.document.getWordRangeAtPosition(
             position,
-            /"([-\w\d]+)"/);
+            /"([-\w]+)"/);
 
         if (range) {
             const text = editor.document.getText(range);

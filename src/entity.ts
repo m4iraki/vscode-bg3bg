@@ -6,10 +6,10 @@ import { LsxEntitiy, LsxParser } from './lsx';
 type EntityType = string;
 
 export class EntityCache {
-    private cache = new Map<EntityType, LsxEntitiy[]>();
+    private static cache = new Map<EntityType, LsxEntitiy[]>();
 
-    public async update(document: vscode.TextDocument): Promise<void> {
-        if (!EntityCache.fileFilter(document)) { return; }
+    public static async update(document: vscode.TextDocument): Promise<void> {
+        if (!(await EntityCache.fileFilter(document))) { return; }
 
         this.removeFile(document.uri);
 
@@ -24,16 +24,26 @@ export class EntityCache {
         }
     }
 
-    public getRegions(): string[] {
+    public static getRegions(): string[] {
         return Array.from(this.cache.keys()).sort();
     }
 
-    public getEntitiesByRegion(region: string): LsxEntitiy[] {
+    public static getEntitiesByRegions(regions: string[]): LsxEntitiy[] {
+        const result: LsxEntitiy[] = [];
+        for (const r in regions) {
+            const entities = this.cache.get(r) || [];
+            result.push(...entities);
+        }
+        return result;
+    }
+    public static getEntitiesByRegion(region: string): LsxEntitiy[] {
         const entities = this.cache.get(region) || [];
         return [...entities].sort((a, b) => a.name.localeCompare(b.name));
     }
-
-    public removeFile(uri: vscode.Uri): void {
+    public static getAllEntities(): LsxEntitiy[] {
+        return Array.from(this.cache.values()).flatMap(entities => entities);
+    }
+    public static removeFile(uri: vscode.Uri): void {
         const uriStr = uri.toString();
         for (const r of this.cache.keys()) {
             const list = this.cache.get(r);
@@ -54,7 +64,7 @@ export class EntityCache {
         '.loca.xml',
         '.txt',
     ];
-    static fileFilter(document: vscode.TextDocument): boolean {
+    static async fileFilter(document: vscode.TextDocument): Promise<boolean> {
         for (const ext of this.extensions) {
             if (
                 document.fileName.endsWith(ext) //&&
@@ -65,6 +75,26 @@ export class EntityCache {
         }
         return false;
     }
+
+    public static meta(): ModMeta | null {
+        const m = this.cache.get('Config')?.[0];
+        if (!m) {
+            return null;
+        }
+        return {
+            author: m.attributes.get('Author') || '',
+            name: m.attributes.get('Name') || '',
+            id: m.attributes.get('UUID') || '',
+            folder: m.attributes.get('Folder') || '',
+        } as ModMeta;
+    }
+}
+
+export interface ModMeta {
+    author: string,
+    name: string,
+    id: string,
+    folder: string,
 }
 
 type LsxTreeEntity = RegionItem | EntityItem;
@@ -74,7 +104,7 @@ export class LsxTreeView implements vscode.TreeDataProvider<LsxTreeEntity> {
     private _onDidChangeTreeData = new vscode.EventEmitter<LsxTreeEvent>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-    constructor(private store: EntityCache) { }
+    constructor() { }
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
@@ -89,14 +119,14 @@ export class LsxTreeView implements vscode.TreeDataProvider<LsxTreeEntity> {
     ): Thenable<(LsxTreeEntity)[]> {
         if (!element) {
             return Promise.resolve(
-                this.store.getRegions()
+                EntityCache.getRegions()
                     .map(r => new RegionItem(r))
             );
         }
 
         if (element instanceof RegionItem) {
             return Promise.resolve(
-                this.store.getEntitiesByRegion(element.label)
+                EntityCache.getEntitiesByRegion(element.label)
                     .map(e => new EntityItem(e))
             );
         }
@@ -136,13 +166,12 @@ class EntityItem extends vscode.TreeItem {
 }
 
 export async function initEntities(context: vscode.ExtensionContext) {
-    const cache = new EntityCache();
-    const treeProvider = new LsxTreeView(cache);
+    const treeProvider = new LsxTreeView();
 
     vscode.window.registerTreeDataProvider('bg3bg.explorer', treeProvider);
 
     const updateAll = async (doc: vscode.TextDocument) => {
-        await cache.update(doc);
+        await EntityCache.update(doc);
         treeProvider.refresh();
     };
 
@@ -152,16 +181,34 @@ export async function initEntities(context: vscode.ExtensionContext) {
         files.map(async (fileUri) => {
             try {
                 const doc = await vscode.workspace.openTextDocument(fileUri);
-                await cache.update(doc);
+                await EntityCache.update(doc);
             } catch (e) {
                 console.log(e);
                 util.logWarning(`Failed to initial parse: ${fileUri.fsPath}`);
             }
         }));
 
+    const metaCmd = vscode.commands.registerCommand(
+        'bg3bg.showMeta',
+        () => {
+            const meta = EntityCache.meta();
+            util.logInfo(
+                `name: ${meta?.name}, ` +
+                `author: ${meta?.name}, ` +
+                `folder: ${meta?.folder}`
+            );
+        },
+    );
+    context.subscriptions.push(metaCmd);
+
+
     treeProvider.refresh();
     context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument(updateAll),
         vscode.workspace.onDidOpenTextDocument(updateAll),
+        vscode.workspace.onDidDeleteFiles(e => {
+            e.files.forEach(uri => EntityCache.removeFile(uri));
+            treeProvider.refresh();
+        })
     );
 }

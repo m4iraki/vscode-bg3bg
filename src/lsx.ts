@@ -6,9 +6,11 @@ export type LsxEntityType = string;
 export interface LsxEntitiy {
     name: string;
     tpe: LsxEntityType;
+    nodeTpe: string;
     id: string;
     range: vscode.Range;
     document: vscode.TextDocument;
+    attributes: Map<string, string>;
 }
 
 interface LsxParserContext {
@@ -68,7 +70,11 @@ export class LsxParser {
             name === 'node' &&
             depthDiff === this.entityDepth
         ) {
-            ctx.entity = { tpe: ctx.region };
+            ctx.entity = {
+                tpe: ctx.region,
+                nodeTpe: this.attr(tag, 'id') || '',
+                attributes: new Map<string, string>(),
+            };
             ctx.startPos = ctx.doc.positionAt(ctx.parser.startTagPosition - 1);
         } else if (
             name === 'attribute' &&
@@ -119,8 +125,15 @@ export class LsxParser {
     ): void {
         const id = this.attr(tag, 'id');
         const value = this.attr(tag, 'value');
-        if (id === 'ID' || id === 'MapKey') { entity.id = value; }
+        if (
+            id === 'ID' ||
+            id === 'MapKey' ||
+            id === 'UUID'
+        ) { entity.id = value; }
         if (id === 'Name') { entity.name = value; }
+        if (id && value) {
+            entity.attributes?.set(id, value);
+        }
     }
 
     private static attr(
@@ -138,4 +151,5 @@ export class LsxParser {
 
         return a as string;
     }
+
 }

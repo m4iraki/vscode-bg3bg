@@ -1,19 +1,20 @@
 import * as vscode from 'vscode';
 import { Commands } from './commands';
-import { MyTreeProvider } from './action';
+import { ActionsTreeProvider } from './action';
 import { initIdentifiers } from './identifiers';
 import { initEntities } from './entity';
+import { initToolkitify } from './toolkitify';
 
 export async function activate(context: vscode.ExtensionContext) {
-  const MainTreeProvider = new MyTreeProvider('bg3bg.main');
-  initIdentifiers(MainTreeProvider);
+  const helpersTreeProvider = new ActionsTreeProvider('bg3bg.main');
+  initIdentifiers(helpersTreeProvider);
 
+  initToolkitify(helpersTreeProvider);
   Commands.init(context);
 
-  MainTreeProvider.init();
+  helpersTreeProvider.init();
 
   initEntities(context);
-
 }
 
 export function deactivate() { }
