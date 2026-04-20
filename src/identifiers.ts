@@ -1,31 +1,25 @@
 import * as vscode from 'vscode';
 import * as util from './util';
 import { Command, Commands } from './commands';
-import { ActionsTreeProvider } from './action';
+import { EntityCache } from './entity';
 
-export function initIdentifiers(treeProvider: ActionsTreeProvider) {
-    const generateUUID: Command = Commands.add(new Command(
-        'bg3bg.generateUUID',
-        () => generateToClipboard(util.newUUID, "UUID")));
+export const generateUUID: Command = Commands.add(new Command(
+    'bg3bg.generateUUID',
+    () => generateToClipboard(util.newUUID, "UUID")));
 
-    const generateHandle: Command = Commands.add(new Command(
-        'bg3bg.generateHandle',
-        () => generateToClipboard(util.newHandle, "handle")));
+export const generateHandle: Command = Commands.add(new Command(
+    'bg3bg.generateHandle',
+    () => generateToClipboard(util.newHandle, "handle")));
 
-    const regenerateSelected: Command = Commands.create(
-        'bg3bg.regenerateSelected',
-        handleGlobalReplace);
+export const regenerateSelected: Command = Commands.create(
+    'bg3bg.regenerateSelected',
+    handleGlobalReplace);
 
-    const regenerateAll: Command = Commands.create(
-        'bg3bg.regenerateAllIds',
-        () => { });
+export const regenerateAll = (ctx: vscode.ExtensionContext) => Commands.create(
+    'bg3bg.regenerateAllIds',
+    () => regenerateAllIdentifiers(ctx));
 
-    treeProvider.create('Generate UUID', generateUUID);
-    treeProvider.create('Generate Handle', generateHandle);
-    treeProvider.create('Regenerate Selected Id', regenerateSelected);
-    treeProvider.create('Regenerate All Ids', regenerateAll);
-}
-const generateToClipboard = async (f: () => string, name: string) => {
+export const generateToClipboard = async (f: () => string, name: string) => {
     const text = f();
     try {
         await vscode.env.clipboard.writeText(text);
@@ -94,6 +88,30 @@ async function handleGlobalReplace() {
         title: `Replacing ${selectedText} in project...`,
         cancellable: false
     }, () => replaceInWholeProject(selectedText, newIdentifier, edit));
+}
+
+async function regenerateAllIdentifiers(
+    context: vscode.ExtensionContext,
+): Promise<void> {
+    const regions = await util.qpWithConfig(
+        'Select Entities to Regenerate IDs for',
+        EntityCache.getRegions(),
+        'bg3bg.regen.selected',
+        context,
+    );
+    const entities = EntityCache.getEntitiesByRegions(regions);
+    const uniqueIds = [... new Set(entities.map(e => e.id))];
+    const idMap: Record<string, string> = {};
+    for (const id of uniqueIds) {
+        const newId = getNewIdentifier(id);
+        if (newId) {
+            idMap[id] = newId;
+        }
+    }
+    const edit = new vscode.WorkspaceEdit();
+    if (!idMap.isEmpty) {
+        await replaceIdentifiersInProject(edit, idMap);
+    }
 }
 
 function getNewIdentifier(selectedText: string): string | undefined {

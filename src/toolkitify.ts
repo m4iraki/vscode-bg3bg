@@ -7,7 +7,6 @@ import * as paths from 'path';
 import { promisify } from 'util';
 import * as cp from 'child_process';
 import { imageDesc } from './image';
-import { ActionsTreeProvider } from './action';
 
 const fs = vscode.workspace.fs;
 const join = vscode.Uri.joinPath;
@@ -33,6 +32,7 @@ interface ToolkitifyCtx {
     meta: ModMeta;
     toolkitified: vscode.Uri;
     tmp: vscode.Uri;
+    divinePath: string;
 };
 export async function toolkitifyStructured(
 
@@ -45,12 +45,18 @@ export async function toolkitifyStructured(
             ' Make sure meta.lsx is at /Mods/folder/meta.lsx');
         return;
     }
+    const divinePath = checkDivine();
+    if (!divinePath) {
+        await setupDivine();
+        return;
+    }
 
     const ctx = {
         root: root,
         meta: meta,
-        toolkitified: join(root, '..', meta.name + '_tk', consts.toolkitified),
-        tmp: join(root, '..', meta.name + '_tk', consts.tmp),
+        toolkitified: join(root, '..', meta.name + '_toolkitified'),
+        tmp: join(root, '..', meta.name + '_toolkitified_tmp'),
+        divinePath: divinePath,
     } as ToolkitifyCtx;
 
     await util.rmrfDirectory(ctx.tmp);
@@ -64,9 +70,8 @@ export async function toolkitifyStructured(
     await copyAsIs(ctx);
     await copyConditional(ctx);
     await processProject(ctx.tmp, ctx.toolkitified, ctx);
-
     const lslibFT = await prepareForLslib(ctx);
-    await execLsLib(lslibFT);
+    await execLsLib(ctx, lslibFT);
 
     await util.rmrfDirectory(ctx.tmp);
 }
@@ -225,9 +230,6 @@ async function prepareIconMetadata(
         `${ctx.meta.folder}/` +
         `${consts.gui}/` +
         `**/*.{png,PNG,dds,DDS}`;
-    // const pattern = new vscode.RelativePattern(
-    //     ctx.root,
-    //     `{${tkPath},${nonTKPath}}`);
     const icons1 = await vscode.workspace.findFiles(
         nonTKPath,
         '{**/toolkitified/**,**/tmp_toolkitify/**}',
@@ -332,24 +334,30 @@ async function mergeToTmp(
     }
 }
 
-async function execLsLib(
-    targets: LsLibFromTo[],
-): Promise<void> {
+function checkDivine(): string | undefined {
     const config = vscode.workspace.getConfiguration('bg3bg');
     const exePath = config.get<string>('divineexe');
-    if (!exePath) {
-        const setup = 'Open Settings';
-        const selection = await util.logError(
-            'Divine.exe path not specified!',
-            setup
+    return exePath;
+}
+async function setupDivine(): Promise<void> {
+    const setup = 'Open Settings';
+    const selection = await util.logError(
+        'Divine.exe path not specified!',
+        setup
+    );
+    if (selection === setup) {
+        vscode.commands.executeCommand(
+            'workbench.action.openSettings',
+            'bg3bg.divineexe',
         );
-        if (selection === setup) {
-            vscode.commands.executeCommand('workbench.action.openSettings', 'bg3bg.divineexe');
-        }
-        return;
     }
-    try {
+}
 
+async function execLsLib(
+    ctx: ToolkitifyCtx,
+    targets: LsLibFromTo[],
+): Promise<void> {
+    try {
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: "Converting...",
@@ -364,8 +372,8 @@ async function execLsLib(
                     '-i', 'lsx',
                     '-o', 'lsf'
                 ];
-                console.log(`${exePath} ${args1.join(', ')}`);
-                await exec(exePath, args1);
+                console.log(`${ctx.divinePath} ${args1.join(', ')}`);
+                await exec(ctx.divinePath, args1);
             }
         });
     } catch (e: unknown) {
@@ -378,10 +386,6 @@ async function execLsLib(
     }
 }
 
-export function initToolkitify(treeProvider: ActionsTreeProvider) {
-    const toolkitify: Command = Commands.create(
-        'bg3bg.toolkitify',
-        toolkitifyStructured);
-
-    treeProvider.create('Toolkitify', toolkitify);
-}
+export const toolkitify: Command = Commands.create(
+    'bg3bg.toolkitify',
+    toolkitifyStructured);

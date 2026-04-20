@@ -33,6 +33,11 @@ export class ActionsTreeProvider
         this._children.push(ai);
         return ai;
     }
+    createMany(
+        entries: [string, Command][],
+    ): void {
+        entries.map(entry => this.create(entry[0], entry[1]));
+    }
     add(ai: ActionItem): ActionItem {
         this._children.push(ai);
         return ai;

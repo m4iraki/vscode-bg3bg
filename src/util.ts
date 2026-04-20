@@ -82,3 +82,61 @@ export async function rmrfDirectory(uri: vscode.Uri): Promise<void> {
         );
     }
 }
+
+const qpItem = (s: string) => {
+    return { label: s };
+};
+
+export async function qp(
+    title: string,
+    items: string[],
+    options?: {
+        defaultItems?: string[],
+        placeholder?: string,
+    },
+): Promise<string[]> {
+    const qp = vscode.window.createQuickPick();
+    const qpitems = items.map(qpItem);
+    const selectedItems = qpitems.filter(item =>
+        options?.defaultItems?.includes(item.label)
+    );
+    qp.items = qpitems;
+    qp.selectedItems = selectedItems;
+    qp.canSelectMany = true;
+    qp.title = title;
+    qp.placeholder = options?.placeholder;
+    qp.show();
+    return new Promise<string[]>((resolve) => {
+        qp.onDidAccept(() => {
+            const selected = qp.selectedItems.map(i => i.label);
+            qp.hide();
+            resolve(selected);
+        });
+        qp.onDidHide(() => {
+            qp.dispose();
+            resolve([]);
+        });
+    });
+}
+
+export async function qpWithConfig(
+    title: string,
+    items: string[],
+    key: string,
+    ctx: vscode.ExtensionContext,
+    options?: {
+        placeholder?: string,
+    }
+): Promise<string[]> {
+    const saved = ctx.workspaceState.get<string[]>(key, []);
+    const selected = await qp(
+        title,
+        items,
+        {
+            defaultItems: saved,
+            placeholder: options?.placeholder,
+        }
+    );
+    await ctx.workspaceState.update(key, selected);
+    return selected;
+}

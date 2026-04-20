@@ -30,7 +30,7 @@ export class EntityCache {
 
     public static getEntitiesByRegions(regions: string[]): LsxEntitiy[] {
         const result: LsxEntitiy[] = [];
-        for (const r in regions) {
+        for (const r of regions) {
             const entities = this.cache.get(r) || [];
             result.push(...entities);
         }
@@ -99,12 +99,46 @@ export interface ModMeta {
 
 type LsxTreeEntity = RegionItem | EntityItem;
 type LsxTreeEvent = LsxTreeEntity | undefined | void;
-export class LsxTreeView implements vscode.TreeDataProvider<LsxTreeEntity> {
+export class LsxTreeView
+    implements vscode.TreeDataProvider<LsxTreeEntity> {
 
     private _onDidChangeTreeData = new vscode.EventEmitter<LsxTreeEvent>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-    constructor() { }
+    constructor(public readonly viewId: string) { }
+
+    init(context: vscode.ExtensionContext): void {
+        vscode.window.registerTreeDataProvider(this.viewId, this);
+        context.subscriptions.push(
+            vscode.workspace.onDidSaveTextDocument(this.updateDoc.bind(this)),
+            vscode.workspace.onDidOpenTextDocument(this.updateDoc.bind(this)),
+            vscode.workspace.onDidDeleteFiles(e => {
+                e.files.forEach(uri => EntityCache.removeFile(uri));
+                this.refresh();
+            })
+        );
+        this.updateAll();
+    }
+
+    async updateDoc(doc: vscode.TextDocument) {
+        await EntityCache.update(doc);
+        this.refresh();
+    }
+
+    async updateAll() {
+        const files = await util.findFiles();
+        for (const file of files) {
+            try {
+                const doc = await vscode.workspace.openTextDocument(file);
+                await EntityCache.update(doc);
+            } catch (e) {
+                util.logWarning(
+                    `Failed to initial parse: ${file.fsPath}` +
+                    ` because of ${e}`);
+            }
+        }
+        this.refresh();
+    }
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
@@ -163,52 +197,4 @@ class EntityItem extends vscode.TreeItem {
             ]
         };
     }
-}
-
-export async function initEntities(context: vscode.ExtensionContext) {
-    const treeProvider = new LsxTreeView();
-
-    vscode.window.registerTreeDataProvider('bg3bg.explorer', treeProvider);
-
-    const updateAll = async (doc: vscode.TextDocument) => {
-        await EntityCache.update(doc);
-        treeProvider.refresh();
-    };
-
-    const files = await util.findFiles();
-
-    await Promise.all(
-        files.map(async (fileUri) => {
-            try {
-                const doc = await vscode.workspace.openTextDocument(fileUri);
-                await EntityCache.update(doc);
-            } catch (e) {
-                console.log(e);
-                util.logWarning(`Failed to initial parse: ${fileUri.fsPath}`);
-            }
-        }));
-
-    const metaCmd = vscode.commands.registerCommand(
-        'bg3bg.showMeta',
-        () => {
-            const meta = EntityCache.meta();
-            util.logInfo(
-                `name: ${meta?.name}, ` +
-                `author: ${meta?.name}, ` +
-                `folder: ${meta?.folder}`
-            );
-        },
-    );
-    context.subscriptions.push(metaCmd);
-
-
-    treeProvider.refresh();
-    context.subscriptions.push(
-        vscode.workspace.onDidSaveTextDocument(updateAll),
-        vscode.workspace.onDidOpenTextDocument(updateAll),
-        vscode.workspace.onDidDeleteFiles(e => {
-            e.files.forEach(uri => EntityCache.removeFile(uri));
-            treeProvider.refresh();
-        })
-    );
 }

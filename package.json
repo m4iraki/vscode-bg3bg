@@ -2,7 +2,7 @@
 	"name": "vscode-bg3bg",
 	"displayName": "BG3BG VSCode",
 	"description": "Baldur's Gate 3 Banks Helper for VSCode",
-	"version": "0.0.2",
+	"version": "0.1.0",
 	"publisher": "m4iraki",
 	"_repository": "",
 	"engines": {
@@ -11,7 +11,9 @@
 	"categories": [
 		"Other"
 	],
-	"activationEvents": [],
+	"activationEvents": [
+		"onStartupFinished"
+	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
@@ -34,10 +36,6 @@
 			{
 				"command": "bg3bg.toolkitify",
 				"title": "Toolkitify"
-			},
-			{
-				"command": "bg3bg.showMeta",
-				"title": "Show Meta"
 			}
 		],
 		"viewsContainers": {
