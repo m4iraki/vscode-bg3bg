@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Commands } from './commands';
 import { ActionsTreeProvider } from './action';
 import * as identifiers from './identifiers';
-import { LsxTreeView } from './entity';
+import { EntityTreeView } from './entity';
 import { toolkitify } from './toolkitify';
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -18,7 +18,7 @@ export async function activate(context: vscode.ExtensionContext) {
   Commands.init(context);
   helpersTreeProvider.init();
 
-  const entitiesTreeProvider = new LsxTreeView('bg3bg.explorer');
+  const entitiesTreeProvider = new EntityTreeView('bg3bg.explorer');
   entitiesTreeProvider.init(context);
 }
 

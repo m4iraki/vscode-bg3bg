@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as util from './util';
 import { Command, Commands } from './commands';
 import { EntityCache } from './entity';
+import * as lsx from './lsx';
 
 export const generateUUID: Command = Commands.add(new Command(
     'bg3bg.generateUUID',
@@ -95,11 +96,11 @@ async function regenerateAllIdentifiers(
 ): Promise<void> {
     const regions = await util.qpWithConfig(
         'Select Entities to Regenerate IDs for',
-        EntityCache.getRegions(),
+        EntityCache.getEntityTypes(),
         'bg3bg.regen.selected',
         context,
     );
-    const entities = EntityCache.getEntitiesByRegions(regions);
+    const entities = EntityCache.getEntitiesByTypes(regions);
     const uniqueIds = [... new Set(entities.map(e => e.id))];
     const idMap: Record<string, string> = {};
     for (const id of uniqueIds) {
@@ -164,7 +165,7 @@ async function replaceIdentifiersInProject(
     edit: vscode.WorkspaceEdit,
     map: Record<string, string>,
 ): Promise<boolean> {
-    const fileUris = await util.findFiles();
+    const fileUris = await util.findFiles(lsx.extension, 'txt', 'xml');
     const processingTasks = fileUris.map(async (uri) => {
         try {
             const document = await vscode.workspace.openTextDocument(uri);

@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 import * as sax from 'sax';
 
+export const extension = 'lsx';
+export const dotExtension = '.' + extension;
 export type LsxEntityType = string;
 
-export interface LsxEntitiy {
+export interface LsxEntity {
     name: string;
     tpe: LsxEntityType;
     nodeTpe: string;
@@ -19,7 +21,7 @@ interface LsxParserContext {
     parser: sax.SAXParser;
     doc: vscode.TextDocument;
     region?: LsxEntityType;
-    entity?: Partial<LsxEntitiy>;
+    entity?: Partial<LsxEntity>;
     startPos?: vscode.Position;
 }
 
@@ -31,9 +33,9 @@ export class LsxParser {
     //  node - always 1 node with no attributes
     //   children
     //    node
-    public static getEntities(document: vscode.TextDocument): LsxEntitiy[] {
+    public static getEntities(document: vscode.TextDocument): LsxEntity[] {
         if (!document.fileName.endsWith('.lsx')) { return []; }
-        const results: LsxEntitiy[] = [];
+        const results: LsxEntity[] = [];
         const parser: sax.SAXParser = sax.parser(true);
         const ctx = {
             currentDepth: 0,
@@ -88,7 +90,7 @@ export class LsxParser {
     private static handleCloseTag(
         name: string,
         ctx: LsxParserContext,
-    ): LsxEntitiy | null {
+    ): LsxEntity | null {
         const tagName = name.toLowerCase();
         if (tagName === 'region') {
             ctx.region = undefined;
@@ -102,7 +104,7 @@ export class LsxParser {
         return null;
     }
 
-    private static finalizeEntity(ctx: LsxParserContext): LsxEntitiy | null {
+    private static finalizeEntity(ctx: LsxParserContext): LsxEntity | null {
         if (ctx.entity?.id &&
             ctx.entity?.name &&
             ctx.startPos
@@ -112,7 +114,7 @@ export class LsxParser {
                 ...ctx.entity,
                 range: new vscode.Range(ctx.startPos, end),
                 document: ctx.doc
-            } as LsxEntitiy;
+            } as LsxEntity;
             ctx.entity = undefined;
             return entity;
         }
@@ -121,7 +123,7 @@ export class LsxParser {
 
     private static fillEntityData(
         tag: sax.Tag | sax.QualifiedTag,
-        entity: Partial<LsxEntitiy>,
+        entity: Partial<LsxEntity>,
     ): void {
         const id = this.attr(tag, 'id');
         const value = this.attr(tag, 'value');

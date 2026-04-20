@@ -36,10 +36,11 @@ export function newUUID(): string {
     return uuidv4();
 }
 
-export function findFiles(): Thenable<vscode.Uri[]> {
-    return vscode.workspace.findFiles(
-        '**/*.{txt,lsx,loca.xml}',
-        '{**/toolkitified/**,**/tmp_toolkitify/**}',
+export async function findFiles(
+    ...extensions: string[]
+): Promise<vscode.Uri[]> {
+    return await vscode.workspace.findFiles(
+        `**/*.{${extensions.join(',')}}`,
     );
 }
 

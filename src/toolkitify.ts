@@ -2,7 +2,7 @@ import * as util from './util';
 import * as vscode from 'vscode';
 import { Command, Commands } from './commands';
 import { EntityCache, ModMeta } from './entity';
-import { LsxEntitiy } from './lsx';
+import { LsxEntity } from './lsx';
 import * as paths from 'path';
 import { promisify } from 'util';
 import * as cp from 'child_process';
@@ -163,7 +163,7 @@ async function prepareForLslib(
     const metadataFT = await prepareIconMetadata(ctx);
     return [...resourcesFT, metadataFT];
 }
-function wrap(enitity: LsxEntitiy): string {
+function wrap(enitity: LsxEntity): string {
     const data = enitity.document.getText(enitity.range);
     return `<?xml version="1.0" encoding="utf-8"?>
 <save>
@@ -230,14 +230,8 @@ async function prepareIconMetadata(
         `${ctx.meta.folder}/` +
         `${consts.gui}/` +
         `**/*.{png,PNG,dds,DDS}`;
-    const icons1 = await vscode.workspace.findFiles(
-        nonTKPath,
-        '{**/toolkitified/**,**/tmp_toolkitify/**}',
-    );
-    const icons2 = await vscode.workspace.findFiles(
-        tkPath,
-        '{**/toolkitified/**,**/tmp_toolkitify/**}',
-    );
+    const icons1 = await vscode.workspace.findFiles(nonTKPath);
+    const icons2 = await vscode.workspace.findFiles(tkPath);
     const icons = [...icons1, ...icons2];
     console.log(icons2.join(','));
     const entries: string =

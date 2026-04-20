@@ -1,19 +1,36 @@
 import * as vscode from 'vscode';
 import * as util from './util';
-import { LsxEntitiy, LsxParser } from './lsx';
+import * as lsx from './lsx';
+import * as paths from 'path';
 
 //todo non-lsx entities (loca, stats)
 type EntityType = string;
+type Entity = lsx.LsxEntity;
 
 export class EntityCache {
-    private static cache = new Map<EntityType, LsxEntitiy[]>();
+    private static cache = new Map<EntityType, Entity[]>();
 
-    public static async update(document: vscode.TextDocument): Promise<void> {
+    public static async updateDoc(
+        document: vscode.TextDocument,
+    ): Promise<void> {
+        const ext = paths.extname(document.uri.fsPath);
+        switch (ext) {
+            case lsx.dotExtension:
+                this.updateLsx(document);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public static async updateLsx(
+        document: vscode.TextDocument,
+    ): Promise<void> {
         if (!(await EntityCache.fileFilter(document))) { return; }
 
         this.removeFile(document.uri);
 
-        const entities = LsxParser.getEntities(document);
+        const entities = lsx.LsxParser.getEntities(document);
 
         for (const entity of entities) {
             const region = entity.tpe;
@@ -24,23 +41,23 @@ export class EntityCache {
         }
     }
 
-    public static getRegions(): string[] {
+    public static getEntityTypes(): string[] {
         return Array.from(this.cache.keys()).sort();
     }
 
-    public static getEntitiesByRegions(regions: string[]): LsxEntitiy[] {
-        const result: LsxEntitiy[] = [];
-        for (const r of regions) {
+    public static getEntitiesByTypes(types: string[]): Entity[] {
+        const result: Entity[] = [];
+        for (const r of types) {
             const entities = this.cache.get(r) || [];
             result.push(...entities);
         }
         return result;
     }
-    public static getEntitiesByRegion(region: string): LsxEntitiy[] {
-        const entities = this.cache.get(region) || [];
+    public static getEntitiesByType(tpe: string): Entity[] {
+        const entities = this.cache.get(tpe) || [];
         return [...entities].sort((a, b) => a.name.localeCompare(b.name));
     }
-    public static getAllEntities(): LsxEntitiy[] {
+    public static getAllEntities(): Entity[] {
         return Array.from(this.cache.values()).flatMap(entities => entities);
     }
     public static removeFile(uri: vscode.Uri): void {
@@ -60,15 +77,14 @@ export class EntityCache {
     }
 
     static extensions: string[] = [
-        '.lsx',
-        '.loca.xml',
+        lsx.dotExtension,
+        '.xml',
         '.txt',
     ];
     static async fileFilter(document: vscode.TextDocument): Promise<boolean> {
         for (const ext of this.extensions) {
             if (
-                document.fileName.endsWith(ext) //&&
-                // !document.fileName.endsWith('.lsf' + ext)
+                document.fileName.endsWith(ext)
             ) {
                 return true;
             }
@@ -97,12 +113,12 @@ export interface ModMeta {
     folder: string,
 }
 
-type LsxTreeEntity = RegionItem | EntityItem;
-type LsxTreeEvent = LsxTreeEntity | undefined | void;
-export class LsxTreeView
-    implements vscode.TreeDataProvider<LsxTreeEntity> {
+type TreeEntity = TypeItem | EntityItem;
+type EntityTreeEvent = TreeEntity | undefined | void;
+export class EntityTreeView
+    implements vscode.TreeDataProvider<TreeEntity> {
 
-    private _onDidChangeTreeData = new vscode.EventEmitter<LsxTreeEvent>();
+    private _onDidChangeTreeData = new vscode.EventEmitter<EntityTreeEvent>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
     constructor(public readonly viewId: string) { }
@@ -120,17 +136,17 @@ export class LsxTreeView
         this.updateAll();
     }
 
-    async updateDoc(doc: vscode.TextDocument) {
-        await EntityCache.update(doc);
+    async updateDoc(doc: vscode.TextDocument): Promise<void> {
+        await EntityCache.updateDoc(doc);
         this.refresh();
     }
 
     async updateAll() {
-        const files = await util.findFiles();
-        for (const file of files) {
+        const lsxFiles = await util.findFiles(lsx.extension);
+        for (const file of lsxFiles) {
             try {
                 const doc = await vscode.workspace.openTextDocument(file);
-                await EntityCache.update(doc);
+                await EntityCache.updateDoc(doc);
             } catch (e) {
                 util.logWarning(
                     `Failed to initial parse: ${file.fsPath}` +
@@ -144,23 +160,23 @@ export class LsxTreeView
         this._onDidChangeTreeData.fire();
     }
 
-    getTreeItem(element: LsxTreeEntity): vscode.TreeItem {
+    getTreeItem(element: TreeEntity): vscode.TreeItem {
         return element;
     }
 
     getChildren(
-        element?: LsxTreeEntity,
-    ): Thenable<(LsxTreeEntity)[]> {
+        element?: TreeEntity,
+    ): Thenable<(TreeEntity)[]> {
         if (!element) {
             return Promise.resolve(
-                EntityCache.getRegions()
-                    .map(r => new RegionItem(r))
+                EntityCache.getEntityTypes()
+                    .map(r => new TypeItem(r))
             );
         }
 
-        if (element instanceof RegionItem) {
+        if (element instanceof TypeItem) {
             return Promise.resolve(
-                EntityCache.getEntitiesByRegion(element.label)
+                EntityCache.getEntitiesByType(element.label)
                     .map(e => new EntityItem(e))
             );
         }
@@ -169,16 +185,16 @@ export class LsxTreeView
     }
 }
 
-class RegionItem extends vscode.TreeItem {
+class TypeItem extends vscode.TreeItem {
     constructor(public readonly label: string) {
         super(label, vscode.TreeItemCollapsibleState.Collapsed);
         this.iconPath = new vscode.ThemeIcon('folder');
-        this.contextValue = 'region';
+        this.contextValue = 'entitytype';
     }
 }
 
 class EntityItem extends vscode.TreeItem {
-    constructor(public readonly entity: LsxEntitiy) {
+    constructor(public readonly entity: lsx.LsxEntity) {
         super(entity.name, vscode.TreeItemCollapsibleState.None);
         this.description = entity.id;
         this.iconPath = new vscode.ThemeIcon('symbol-property');
