@@ -2,7 +2,7 @@
 	"name": "vscode-bg3bg",
 	"displayName": "BG3BG VSCode",
 	"description": "Baldur's Gate 3 Banks Helper for VSCode",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"publisher": "m4iraki",
 	"_repository": "",
 	"engines": {
@@ -42,6 +42,71 @@
 				"command": "bg3bg.refreshEntities",
 				"title": "Refresh Entities",
 				"icon": "$(refresh)"
+			},
+			{
+				"command": "bg3bg.refreshLoca",
+				"title": "Refresh Localization",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "bg3bg.openBrazilianPortuguese",
+				"title": "PT"
+			},
+			{
+				"command": "bg3bg.openChinese",
+				"title": "ZH"
+			},
+			{
+				"command": "bg3bg.openChineseTraditional",
+				"title": "ZH"
+			},
+			{
+				"command": "bg3bg.openEnglish",
+				"title": "EN"
+			},
+			{
+				"command": "bg3bg.openFrench",
+				"title": "FR"
+			},
+			{
+				"command": "bg3bg.openGerman",
+				"title": "DE"
+			},
+			{
+				"command": "bg3bg.openItalian",
+				"title": "IT"
+			},
+			{
+				"command": "bg3bg.openJapanese",
+				"title": "JA"
+			},
+			{
+				"command": "bg3bg.openKorean",
+				"title": "KR"
+			},
+			{
+				"command": "bg3bg.openLatinSpanish",
+				"title": "LA"
+			},
+			{
+				"command": "bg3bg.openPolish",
+				"title": "PL"
+			},
+			{
+				"command": "bg3bg.openRussian",
+				"title": "RU"
+			},
+			{
+				"command": "bg3bg.openSpanish",
+				"title": "ES"
+			},
+			{
+				"command": "bg3bg.openTurkish",
+				"title": "TR"
+			},
+			{
+				"command": "bg3bg.openUkrainian",
+				"title": "UK"
 			}
 		],
 		"viewsContainers": {
@@ -64,6 +129,11 @@
 					"id": "bg3bg.entExplorer",
 					"name": "Entities",
 					"icon": "$(symbol-misc)"
+				},
+				{
+					"id": "bg3bg.locaExplorer",
+					"name": "Localization",
+					"icon": "$(globe)"
 				}
 			]
 		},
@@ -73,6 +143,88 @@
 					"command": "bg3bg.refreshEntities",
 					"when": "view == bg3bg.entExplorer",
 					"group": "navigation"
+				},
+				{
+					"command": "bg3bg.refreshLoca",
+					"when": "view == bg3bg.locaExplorer",
+					"group": "navigation"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "bg3bg.openBrazilianPortuguese",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /BrazilianPortuguese/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openChinese",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /Chinese/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openChineseTraditional",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /ChineseTraditional/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openEnglish",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /English/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openFrench",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /French/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openGerman",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /German/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openItalian",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /Italian/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openJapanese",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /Japanese/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openKorean",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /Korean/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openLatinSpanish",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /LatinSpanish/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openPolish",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /Polish/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openRussian",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /Russian/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openSpanish",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /Spanish/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openTurkish",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /Turkish/",
+					"group": "inline"
+				},
+				{
+					"command": "bg3bg.openUkrainian",
+					"when": "view == bg3bg.locaExplorer && viewItem =~ /Ukrainian/",
+					"group": "inline"
 				}
 			]
 		},

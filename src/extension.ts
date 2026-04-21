@@ -4,6 +4,7 @@ import { ActionsTreeProvider } from './action';
 import * as identifiers from './identifiers';
 import { LsxEntityTreeView } from './lsx';
 import { toolkitify } from './toolkitify';
+import { LocaTreeView } from './loca';
 
 export async function activate(context: vscode.ExtensionContext) {
   const helpersTreeProvider = new ActionsTreeProvider('bg3bg.helpers');
@@ -20,6 +21,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const entitiesTreeProvider = new LsxEntityTreeView('bg3bg.entExplorer');
   entitiesTreeProvider.init(context);
+  const locaTreeProvider = new LocaTreeView('bg3bg.locaExplorer');
+  locaTreeProvider.init(context);
 }
 
 export function deactivate() { }

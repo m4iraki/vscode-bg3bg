@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as util from './util';
 import { Command, Commands } from './commands';
 import { LsxEntityStorage } from './lsx';
+import * as loca from './loca';
 
 export const generateUUID: Command = Commands.add(new Command(
     'bg3bg.generateUUID',
@@ -93,14 +94,18 @@ async function handleGlobalReplace() {
 async function regenerateAllIdentifiers(
     context: vscode.ExtensionContext,
 ): Promise<void> {
-    const regions = await util.qpWithConfig(
+    const allTypes = [...LsxEntityStorage.getEntityTypes(), loca.localization];
+    const types = await util.qpWithConfig(
         'Select Entities to Regenerate IDs for',
-        LsxEntityStorage.getEntityTypes(),
+        allTypes,
         'bg3bg.regen.selected',
         context,
     );
-    const entities = LsxEntityStorage.getEntitiesByTypes(regions);
-    const uniqueIds = [... new Set(entities.map(e => e.id))];
+    const entities = LsxEntityStorage.getEntitiesByTypes(types).map(e => e.id);
+    const locaIds = (types.includes(loca.localization))
+        ? loca.LocaStorage.getEntities().map(e => e.id)
+        : [];
+    const uniqueIds = new Set([...entities, ...locaIds]);
     const idMap: Record<string, string> = {};
     for (const id of uniqueIds) {
         const newId = getNewIdentifier(id);
