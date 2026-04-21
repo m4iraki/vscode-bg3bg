@@ -4,7 +4,14 @@
 	"description": "Baldur's Gate 3 Banks Helper for VSCode",
 	"version": "0.1.1",
 	"publisher": "m4iraki",
-	"_repository": "",
+	"repository": "github:m4iraki/vscode-bg3bg",
+	"keywords": [
+		"bg3",
+		"baldurs gate 3",
+		"localization",
+		"lsx",
+		"modding"
+	],
 	"engines": {
 		"vscode": "^1.100.0"
 	},
