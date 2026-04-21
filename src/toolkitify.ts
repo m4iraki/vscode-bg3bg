@@ -1,8 +1,7 @@
 import * as util from './util';
 import * as vscode from 'vscode';
 import { Command, Commands } from './commands';
-import { EntityCache, ModMeta } from './entity';
-import { LsxEntity } from './lsx';
+import { LsxEntity, LsxEntityStorage, ModMeta } from './lsx';
 import * as paths from 'path';
 import { promisify } from 'util';
 import * as cp from 'child_process';
@@ -38,7 +37,7 @@ export async function toolkitifyStructured(
 
 ): Promise<void> {
     const root = util.rootFolder();
-    const meta = EntityCache.meta();
+    const meta = LsxEntityStorage.meta();
 
     if (!root || !meta) {
         util.logWarning('Cannot toolkitify project.' +
@@ -50,7 +49,10 @@ export async function toolkitifyStructured(
         await setupDivine();
         return;
     }
-
+    const dirty = await checkDirty();
+    if (dirty) {
+        return;
+    }
     const ctx = {
         root: root,
         meta: meta,
@@ -74,6 +76,7 @@ export async function toolkitifyStructured(
     await execLsLib(ctx, lslibFT);
 
     await util.rmrfDirectory(ctx.tmp);
+    await vscode.env.openExternal(ctx.toolkitified);
 }
 
 
@@ -133,7 +136,7 @@ async function copyAsIs(
     ) {
         const entries = await fs.readDirectory(join(ctx.root, subpath.fsPath));
         for (const entry of entries) {
-            if (entry[1] == vscode.FileType.Directory) {
+            if (entry[1] === vscode.FileType.Directory) {
                 const nSubpath = join(subpath, entry[0]);
                 if (excl.includes(nSubpath.fsPath)) {
                     continue;
@@ -163,13 +166,14 @@ async function prepareForLslib(
     const metadataFT = await prepareIconMetadata(ctx);
     return [...resourcesFT, metadataFT];
 }
-function wrap(enitity: LsxEntity): string {
-    const data = enitity.document.getText(enitity.range);
+async function wrap(entity: LsxEntity): Promise<string> {
+    const doc = await vscode.workspace.openTextDocument(entity.document);
+    const data = doc.getText(entity.range);
     return `<?xml version="1.0" encoding="utf-8"?>
 <save>
 	<version major="4" minor="0" revision="6" build="5" lslib_meta="v1,bswap_guids" />
-	<region id="${enitity.tpe}">
-		<node id="${enitity.tpe}">
+	<region id="${entity.tpe}">
+		<node id="${entity.tpe}">
 			<children>
 				${data}
 			</children>
@@ -180,7 +184,7 @@ function wrap(enitity: LsxEntity): string {
 async function splitResources(
     ctx: ToolkitifyCtx,
 ): Promise<LsLibFromTo[]> {
-    const entities = EntityCache.getAllEntities();
+    const entities = LsxEntityStorage.getAllEntities();
 
     const templatesSubPath = [consts.pub, ctx.meta.folder, consts.templates];
     const contentSubPath = [consts.pub, ctx.meta.folder, consts.content];
@@ -188,13 +192,13 @@ async function splitResources(
     const content = join(ctx.root, ...contentSubPath).fsPath;
 
     const filtered = entities.filter(e => {
-        const path = e.document.uri.fsPath;
+        const path = e.document.fsPath;
         return path.startsWith(rootTemplates) ||
             path.startsWith(content);
     });
-    await Promise.all(filtered.map(e => {
-        const content = wrap(e);
-        const rel = paths.relative(ctx.root.fsPath, e.document.uri.fsPath);
+    await Promise.all(filtered.map(async e => {
+        const content = await wrap(e);
+        const rel = paths.relative(ctx.root.fsPath, e.document.fsPath);
         const relPath = paths.parse(rel).dir;
         const target = paths.resolve(ctx.tmp.fsPath, relPath, `${e.id}.lsx`);
         const targetPath = vscode.Uri.file(target);
@@ -233,7 +237,6 @@ async function prepareIconMetadata(
     const icons1 = await vscode.workspace.findFiles(nonTKPath);
     const icons2 = await vscode.workspace.findFiles(tkPath);
     const icons = [...icons1, ...icons2];
-    console.log(icons2.join(','));
     const entries: string =
         (await Promise.all(icons.map(wrapIcon)))
             .filter(icon => icon !== null)
@@ -265,7 +268,7 @@ async function wrapIcon(
     icon: vscode.Uri,
 ): Promise<string | null> {
     const desc = await imageDesc(icon);
-    if (desc == null) { return null; }
+    if (desc === null) { return null; }
 
     const path = icon.path;
     const pivot = `/${consts.gui}/`;
@@ -366,7 +369,6 @@ async function execLsLib(
                     '-i', 'lsx',
                     '-o', 'lsf'
                 ];
-                console.log(`${ctx.divinePath} ${args1.join(', ')}`);
                 await exec(ctx.divinePath, args1);
             }
         });
@@ -380,6 +382,23 @@ async function execLsLib(
     }
 }
 
+const saveAll = 'Save All and Continue';
+const cancel = 'Cancel';
+async function checkDirty(): Promise<boolean> {
+    const dirty = vscode.workspace.textDocuments.filter(d => d.isDirty);
+    if (dirty.length > 0) {
+        const action = await util.logWarning(
+            `You have ${dirty.length} unsaved files. Cannot toolkitify!`,
+            saveAll, cancel,
+        );
+        if (action === saveAll) {
+            await vscode.workspace.saveAll();
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
 export const toolkitify: Command = Commands.create(
     'bg3bg.toolkitify',
     toolkitifyStructured);

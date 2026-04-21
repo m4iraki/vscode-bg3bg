@@ -2,23 +2,23 @@ import * as vscode from 'vscode';
 import { Commands } from './commands';
 import { ActionsTreeProvider } from './action';
 import * as identifiers from './identifiers';
-import { EntityTreeView } from './entity';
+import { LsxEntityTreeView } from './lsx';
 import { toolkitify } from './toolkitify';
 
 export async function activate(context: vscode.ExtensionContext) {
-  const helpersTreeProvider = new ActionsTreeProvider('bg3bg.main');
+  const helpersTreeProvider = new ActionsTreeProvider('bg3bg.helpers');
   helpersTreeProvider.createMany([
     ['Generate UUID', identifiers.generateUUID],
     ['Generate Handle', identifiers.generateHandle],
     ['Regenerate Selected Id', identifiers.regenerateSelected],
     ['Regenerate All Ids', identifiers.regenerateAll(context)],
-    ['Toolkitify', toolkitify],
+    ['Toolkitify', toolkitify, new vscode.ThemeIcon('archive')],
   ]);
 
   Commands.init(context);
   helpersTreeProvider.init();
 
-  const entitiesTreeProvider = new EntityTreeView('bg3bg.explorer');
+  const entitiesTreeProvider = new LsxEntityTreeView('bg3bg.entExplorer');
   entitiesTreeProvider.init(context);
 }
 

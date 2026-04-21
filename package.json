@@ -35,7 +35,13 @@
 			},
 			{
 				"command": "bg3bg.toolkitify",
-				"title": "Toolkitify"
+				"title": "Toolkitify",
+				"icon": "$(archive)"
+			},
+			{
+				"command": "bg3bg.refreshEntities",
+				"title": "Refresh Entities",
+				"icon": "$(refresh)"
 			}
 		],
 		"viewsContainers": {
@@ -50,14 +56,23 @@
 		"views": {
 			"bg3bg": [
 				{
-					"id": "bg3bg.main",
+					"id": "bg3bg.helpers",
 					"name": "Helpers",
-					"icon": "$()"
+					"icon": "$(wand)"
 				},
 				{
-					"id": "bg3bg.explorer",
+					"id": "bg3bg.entExplorer",
 					"name": "Entities",
-					"icon": "$()"
+					"icon": "$(symbol-misc)"
+				}
+			]
+		},
+		"menus": {
+			"view/title": [
+				{
+					"command": "bg3bg.refreshEntities",
+					"when": "view == bg3bg.entExplorer",
+					"group": "navigation"
 				}
 			]
 		},

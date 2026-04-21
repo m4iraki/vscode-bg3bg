@@ -4,7 +4,8 @@ import { Command } from './commands';
 export class ActionItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
-        public readonly _command: Command,
+        cmd: Command,
+        public readonly iconPath?: string | vscode.IconPath,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState =
             vscode.TreeItemCollapsibleState.None
     ) {
@@ -12,7 +13,7 @@ export class ActionItem extends vscode.TreeItem {
         super(label, collapsibleState);
 
         this.command = {
-            command: _command.identifier,
+            command: cmd.identifier,
             title: label,
             arguments: [this]
         };
@@ -28,15 +29,16 @@ export class ActionsTreeProvider
     create(
         label: string,
         command: Command,
+        icon?: string | vscode.IconPath
     ): ActionItem {
-        const ai = new ActionItem(label, command);
+        const ai = new ActionItem(label, command, icon);
         this._children.push(ai);
         return ai;
     }
     createMany(
-        entries: [string, Command][],
+        entries: [string, Command, (string | vscode.IconPath)?][],
     ): void {
-        entries.map(entry => this.create(entry[0], entry[1]));
+        entries.map(entry => this.create(entry[0], entry[1], entry[2]));
     }
     add(ai: ActionItem): ActionItem {
         this._children.push(ai);

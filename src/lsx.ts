@@ -1,20 +1,23 @@
 import * as vscode from 'vscode';
 import * as sax from 'sax';
+import * as util from './util';
 
-export const extension = 'lsx';
-export const dotExtension = '.' + extension;
-export type LsxEntityType = string;
+const extension = 'lsx';
+const dotExtension = '.' + extension;
+function isLsx(uri: vscode.Uri): boolean {
+    return util.fext(uri.fsPath) === dotExtension;
+}
 
+type LsxEntityType = string;
 export interface LsxEntity {
     name: string;
     tpe: LsxEntityType;
     nodeTpe: string;
     id: string;
     range: vscode.Range;
-    document: vscode.TextDocument;
+    document: vscode.Uri;
     attributes: Map<string, string>;
 }
-
 interface LsxParserContext {
     currentDepth: number;
     regionDepth: number;
@@ -24,17 +27,9 @@ interface LsxParserContext {
     entity?: Partial<LsxEntity>;
     startPos?: vscode.Position;
 }
-
-export class LsxParser {
-    //node: {attribute[] children: node[]}
-    //save
-    // version
-    // region
-    //  node - always 1 node with no attributes
-    //   children
-    //    node
+class LsxParser {
     public static getEntities(document: vscode.TextDocument): LsxEntity[] {
-        if (!document.fileName.endsWith('.lsx')) { return []; }
+        if (!isLsx(document.uri)) { return []; }
         const results: LsxEntity[] = [];
         const parser: sax.SAXParser = sax.parser(true);
         const ctx = {
@@ -113,7 +108,7 @@ export class LsxParser {
             const entity = {
                 ...ctx.entity,
                 range: new vscode.Range(ctx.startPos, end),
-                document: ctx.doc
+                document: ctx.doc.uri,
             } as LsxEntity;
             ctx.entity = undefined;
             return entity;
@@ -154,4 +149,185 @@ export class LsxParser {
         return a as string;
     }
 
+}
+
+export class LsxEntityStorage {
+    private static storage = new Map<LsxEntityType, LsxEntity[]>();
+
+    public static async updateFile(
+        document: vscode.TextDocument,
+    ): Promise<void> {
+        if (!isLsx(document.uri)) { return; }
+        this.removeFile(document.uri);
+        const entities = LsxParser.getEntities(document);
+        for (const entity of entities) {
+            const region = entity.tpe;
+            if (!this.storage.has(region)) {
+                this.storage.set(region, []);
+            }
+            this.storage.get(region)!.push(entity);
+        }
+    }
+
+    public static getEntityTypes(): string[] {
+        return Array.from(this.storage.keys()).sort();
+    }
+
+    public static getEntitiesByTypes(types: string[]): LsxEntity[] {
+        const result: LsxEntity[] = [];
+        for (const r of types) {
+            const entities = this.storage.get(r) || [];
+            result.push(...entities);
+        }
+        return result;
+    }
+    public static getEntitiesByType(tpe: string): LsxEntity[] {
+        const entities = this.storage.get(tpe) || [];
+        return [...entities].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    public static getAllEntities(): LsxEntity[] {
+        return Array.from(this.storage.values()).flatMap(entities => entities);
+    }
+    public static removeFile(uri: vscode.Uri): void {
+        if (!isLsx(uri)) { return; }
+        const uriStr = uri.fsPath;
+        for (const r of this.storage.keys()) {
+            const list = this.storage.get(r);
+            if (list) {
+                const filtered = list.filter(
+                    e => e.document.fsPath !== uriStr);
+                if (filtered.length === 0) {
+                    this.storage.delete(r);
+                } else {
+                    this.storage.set(r, filtered);
+                }
+            }
+        }
+    }
+
+    public static meta(): ModMeta | null {
+        const m = this.storage.get('Config')?.[0];
+        if (!m) {
+            return null;
+        }
+        return {
+            author: m.attributes.get('Author') || '',
+            name: m.attributes.get('Name') || '',
+            id: m.attributes.get('UUID') || '',
+            folder: m.attributes.get('Folder') || '',
+        } as ModMeta;
+    }
+}
+
+export interface ModMeta {
+    author: string,
+    name: string,
+    id: string,
+    folder: string,
+}
+
+
+type LsxTreeEntity = LsxTypeItem | LsxEntityItem;
+type LsxTreeEvent = LsxTreeEntity | undefined | void;
+export class LsxEntityTreeView
+    implements vscode.TreeDataProvider<LsxTreeEntity> {
+
+    private _onDidChangeTreeData = new vscode.EventEmitter<LsxTreeEvent>();
+    readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+
+    constructor(public readonly viewId: string) { }
+
+    init(context: vscode.ExtensionContext): void {
+        vscode.window.registerTreeDataProvider(this.viewId, this);
+        const refreshCmd = vscode.commands.registerCommand(
+            'bg3bg.refreshEntities',
+            this.updateAll.bind(this));
+        context.subscriptions.push(
+            vscode.workspace.onDidSaveTextDocument(this.updateDoc.bind(this)),
+            vscode.workspace.onDidOpenTextDocument(this.updateDoc.bind(this)),
+            vscode.workspace.onDidDeleteFiles(e => {
+                e.files.forEach(uri => LsxEntityStorage.removeFile(uri));
+                this.refresh();
+            }),
+            refreshCmd,
+        );
+        this.updateAll();
+    }
+
+    async updateDoc(doc: vscode.TextDocument): Promise<void> {
+        await LsxEntityStorage.updateFile(doc);
+        this.refresh();
+    }
+
+    async updateAll() {
+        const lsxFiles = await util.findFiles(extension);
+        for (const file of lsxFiles) {
+            try {
+                const doc = await vscode.workspace.openTextDocument(file);
+                await LsxEntityStorage.updateFile(doc);
+            } catch (e) {
+                util.logWarning(
+                    `Failed to parse: ${file.fsPath} because of ${e}`);
+            }
+        }
+        this.refresh();
+    }
+
+    refresh(): void {
+        this._onDidChangeTreeData.fire();
+    }
+
+    getTreeItem(element: LsxTreeEntity): vscode.TreeItem {
+        return element;
+    }
+
+    getChildren(
+        element?: LsxTreeEntity,
+    ): Thenable<(LsxTreeEntity)[]> {
+        if (!element) {
+            return Promise.resolve(
+                LsxEntityStorage.getEntityTypes()
+                    .map(r => new LsxTypeItem(r))
+            );
+        }
+
+        if (element instanceof LsxTypeItem) {
+            return Promise.resolve(
+                LsxEntityStorage.getEntitiesByType(element.label)
+                    .map(e => new LsxEntityItem(e))
+            );
+        }
+
+        return Promise.resolve([]);
+    }
+}
+
+class LsxTypeItem extends vscode.TreeItem {
+    constructor(public readonly label: string) {
+        super(label, vscode.TreeItemCollapsibleState.Collapsed);
+        this.iconPath = new vscode.ThemeIcon('folder');
+        // this.contextValue = 'entitytype';
+    }
+}
+
+class LsxEntityItem extends vscode.TreeItem {
+    constructor(public readonly entity: LsxEntity) {
+        super(entity.name, vscode.TreeItemCollapsibleState.None);
+        this.description = entity.id;
+        this.iconPath = new vscode.ThemeIcon('code');
+
+        const cursor = entity.range.start;
+        this.command = {
+            command: 'vscode.open',
+            title: 'Open Entity',
+            arguments: [
+                entity.document,
+                {
+                    selection: new vscode.Range(cursor, cursor),
+                    preserveFocus: false,
+                    viewColumn: vscode.ViewColumn.Active
+                }
+            ]
+        };
+    }
 }

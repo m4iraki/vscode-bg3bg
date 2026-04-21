@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
+import * as paths from 'path';
 
 export type LogLevel = 'Information' | 'Warning' | 'Error';
 
@@ -140,4 +141,32 @@ export async function qpWithConfig(
     );
     await ctx.workspaceState.update(key, selected);
     return selected;
+}
+
+export function struri(
+    uri: vscode.Uri | string,
+): string {
+    return (typeof uri === 'string') ? uri : uri.fsPath;
+}
+
+export function fname(
+    uri: vscode.Uri | string,
+): string {
+    return paths.basename(struri(uri));
+}
+
+export function fparentName(
+    uri: vscode.Uri | string,
+): string {
+    return fname(fparent(uri));
+}
+export function fparent(
+    uri: vscode.Uri | string,
+): string {
+    return paths.dirname(struri(uri));
+}
+export function fext(
+    uri: vscode.Uri | string,
+): string {
+    return (paths.extname(struri(uri)));
 }
