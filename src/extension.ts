@@ -5,6 +5,7 @@ import * as identifiers from './identifiers';
 import { LsxEntityTreeView } from './lsx';
 import { toolkitify } from './toolkitify';
 import { LocaTreeView } from './loca';
+import { BG3EntityDropProvider } from './dnd';
 
 export async function activate(context: vscode.ExtensionContext) {
   const helpersTreeProvider = new ActionsTreeProvider('bg3bg.helpers');
@@ -23,6 +24,11 @@ export async function activate(context: vscode.ExtensionContext) {
   entitiesTreeProvider.init(context);
   const locaTreeProvider = new LocaTreeView('bg3bg.locaExplorer');
   locaTreeProvider.init(context);
+
+  const selector: vscode.DocumentSelector = { scheme: 'file' };
+  const dropProvider = vscode.languages.registerDocumentDropEditProvider(
+    selector, new BG3EntityDropProvider());
+  context.subscriptions.push(dropProvider);
 }
 
 export function deactivate() { }

@@ -30,29 +30,10 @@ export const generateToClipboard = async (f: () => string, name: string) => {
     }
 };
 
-const handleRegexp = new RegExp(
-    'h' +
-    '[0-9a-f]{8}g' +
-    '[0-9a-f]{4}g' +
-    '4[0-9a-f]{3}g' +
-    '[89ab][0-9a-f]{3}g' +
-    '[0-9a-f]{12}',
-    'i'
-);
-
-const uuidV4Regexp = new RegExp(
-    '[0-9a-f]{8}-' +
-    '[0-9a-f]{4}-' +
-    '4[0-9a-f]{3}-' +
-    '[89ab][0-9a-f]{3}-' +
-    '[0-9a-f]{12}',
-    'i'
-);
-
 const identifierRegexp = new RegExp(
-    handleRegexp.source +
+    util.handleRegexp.source +
     '|' +
-    uuidV4Regexp.source,
+    util.uuidV4Regexp.source,
     'i'
 );
 
@@ -120,10 +101,10 @@ async function regenerateAllIdentifiers(
 }
 
 function getNewIdentifier(selectedText: string): string | undefined {
-    if (uuidV4Regexp.test(selectedText)) {
+    if (util.uuidV4Regexp.test(selectedText)) {
         return util.newUUID();
     }
-    if (handleRegexp.test(selectedText)) {
+    if (util.handleRegexp.test(selectedText)) {
         return util.newHandle();
     }
     return;

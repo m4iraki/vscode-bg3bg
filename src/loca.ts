@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as util from './util';
+import { BG3EntityDragController } from './dnd';
 
 export const extension = 'xml';
 export const dotExtension = '.' + extension;
@@ -139,6 +140,7 @@ export class LocaStorage {
 }
 
 class LocaTreeItem extends vscode.TreeItem {
+    public identifier: string;
     public static primaryEntry(entity: LocaEntity): LocaEntry {
         const locas = entity.localizations;
         const available = Object.keys(locas);
@@ -153,6 +155,7 @@ class LocaTreeItem extends vscode.TreeItem {
     constructor(public readonly entity: LocaEntity) {
         const primary = LocaTreeItem.primaryEntry(entity);
         super(primary.text);
+        this.identifier = entity.id;
         const entries = LocaTreeItem.allEntries(entity);
         if (entries.length > 1) {
             this.contextValue = entries.map(e => e.language).join('_');
@@ -185,7 +188,15 @@ export class LocaTreeView
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
     constructor(public readonly viewId: string) { }
     init(context: vscode.ExtensionContext): void {
-        vscode.window.registerTreeDataProvider(this.viewId, this);
+        const dnd = new BG3EntityDragController<LocaTreeItem>(
+            item => item.identifier);
+        const treeView = vscode.window.createTreeView(
+            this.viewId,
+            {
+                treeDataProvider: this,
+                dragAndDropController: dnd,
+            }
+        );
         const refreshCmd = vscode.commands.registerCommand(
             'bg3bg.refreshLoca',
             this.updateAll.bind(this));
@@ -197,6 +208,7 @@ export class LocaTreeView
                 this.refresh();
             }),
             refreshCmd,
+            treeView,
         );
         LocaStorage.registerCommands(context);
         this.updateAll();

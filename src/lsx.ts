@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as sax from 'sax';
 import * as util from './util';
+import { BG3EntityDragController } from './dnd';
 
 const extension = 'lsx';
 const dotExtension = '.' + extension;
@@ -238,7 +239,15 @@ export class LsxEntityTreeView
     constructor(public readonly viewId: string) { }
 
     init(context: vscode.ExtensionContext): void {
-        vscode.window.registerTreeDataProvider(this.viewId, this);
+        const dnd = new BG3EntityDragController<LsxTreeEntity>(
+            item => item.identifier);
+        const treeView = vscode.window.createTreeView(
+            this.viewId,
+            {
+                treeDataProvider: this,
+                dragAndDropController: dnd,
+            }
+        );
         const refreshCmd = vscode.commands.registerCommand(
             'bg3bg.refreshEntities',
             this.updateAll.bind(this));
@@ -250,6 +259,7 @@ export class LsxEntityTreeView
                 this.refresh();
             }),
             refreshCmd,
+            treeView,
         );
         this.updateAll();
     }
@@ -303,18 +313,20 @@ export class LsxEntityTreeView
 }
 
 class LsxTypeItem extends vscode.TreeItem {
+    public identifier: string | null = null;
     constructor(public readonly label: string) {
         super(label, vscode.TreeItemCollapsibleState.Collapsed);
         this.iconPath = new vscode.ThemeIcon('folder');
-        // this.contextValue = 'entitytype';
     }
 }
 
 class LsxEntityItem extends vscode.TreeItem {
+    public identifier: string | null;
     constructor(public readonly entity: LsxEntity) {
         super(entity.name, vscode.TreeItemCollapsibleState.None);
         this.description = entity.id;
         this.iconPath = new vscode.ThemeIcon('code');
+        this.identifier = entity.id;
 
         const cursor = entity.range.start;
         this.command = {
