@@ -189,3 +189,23 @@ export const uuidV4Regexp = new RegExp(
     '[0-9a-f]{12}',
     'i'
 );
+export function getConfig(name: string): string | undefined {
+    const config = vscode.workspace.getConfiguration('bg3bg');
+    return config.get<string>(name);
+}
+export async function setupConfig(
+    name: string,
+    errorText: string,
+): Promise<void> {
+        const setup = 'Open Settings';
+        const selection = await logError(
+            errorText,
+            setup
+        );
+        if (selection === setup) {
+            vscode.commands.executeCommand(
+                'workbench.action.openSettings',
+                `bg3bg.${name}`,
+            );
+        }
+}

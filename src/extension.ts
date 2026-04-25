@@ -3,7 +3,7 @@ import { Commands } from './commands';
 import { ActionsTreeProvider } from './action';
 import * as identifiers from './identifiers';
 import { LsxEntityTreeView } from './lsx';
-import { toolkitify } from './toolkitify';
+import { toolkitify, removeToolkitProject } from './toolkitify';
 import { LocaTreeView } from './loca';
 import { BG3EntityDropProvider } from './dnd';
 
@@ -15,6 +15,8 @@ export async function activate(context: vscode.ExtensionContext) {
     ['Regenerate Selected Id', identifiers.regenerateSelected],
     ['Regenerate All Ids', identifiers.regenerateAll(context)],
     ['Toolkitify', toolkitify, new vscode.ThemeIcon('archive')],
+    ['Remove Toolkit Project',
+      removeToolkitProject, new vscode.ThemeIcon('unarchive')],
   ]);
 
   Commands.init(context);

@@ -40,13 +40,15 @@ export async function toolkitifyStructured(
     const meta = LsxEntityStorage.meta();
 
     if (!root || !meta) {
-        util.logWarning('Cannot toolkitify project.' +
+        util.logError('Cannot toolkitify project.' +
             ' Make sure meta.lsx is at /Mods/folder/meta.lsx');
         return;
     }
-    const divinePath = checkDivine();
+    const divinePath = util.getConfig('divineexe');
     if (!divinePath) {
-        await setupDivine();
+        await util.setupConfig(
+            'divineexe',
+            'Divine.exe path not specified!');
         return;
     }
     const dirty = await checkDirty();
@@ -331,25 +333,6 @@ async function mergeToTmp(
     }
 }
 
-function checkDivine(): string | undefined {
-    const config = vscode.workspace.getConfiguration('bg3bg');
-    const exePath = config.get<string>('divineexe');
-    return exePath;
-}
-async function setupDivine(): Promise<void> {
-    const setup = 'Open Settings';
-    const selection = await util.logError(
-        'Divine.exe path not specified!',
-        setup
-    );
-    if (selection === setup) {
-        vscode.commands.executeCommand(
-            'workbench.action.openSettings',
-            'bg3bg.divineexe',
-        );
-    }
-}
-
 async function execLsLib(
     ctx: ToolkitifyCtx,
     targets: LsLibFromTo[],
@@ -399,6 +382,47 @@ async function checkDirty(): Promise<boolean> {
     }
     return false;
 }
+
+const gamedata = 'gamedata';
+function toolkitFolders(
+    dataPath: string,
+    meta: ModMeta,
+): string[] {
+    const tails = [
+        ['Generated', 'Public', meta.folder],
+        ['Mods', meta.folder],
+        ['Projects', meta.folder],
+        ['Public', meta.folder],
+    ];
+    return tails.map(arr => paths.resolve(dataPath, ...arr));
+}
+async function removeToolkitProj(): Promise<void> {
+    const meta = LsxEntityStorage.meta();
+    if (!meta) {
+        util.logError(
+            'Cannot find meta.lsx to identify mod.' +
+            ' Make sure meta.lsx is at /Mods/folder/meta.lsx');
+        return;
+    }
+    const dataPath = util.getConfig(gamedata);
+    if (!dataPath) {
+        await util.setupConfig(
+            gamedata,
+            'Game\' \'Data\' path is not specified');
+        return;
+    }
+    const folders = toolkitFolders(dataPath, meta);
+    const uris = folders.map(f => vscode.Uri.file(f));
+    await Promise.all(
+        uris.map(util.rmrfDirectory)
+    );
+    util.logInfo(`Deleted all ${meta.folder} occurences in Data`);
+    return;
+}
+
 export const toolkitify: Command = Commands.create(
     'bg3bg.toolkitify',
     toolkitifyStructured);
+export const removeToolkitProject: Command = Commands.create(
+    'bg3bg.removeToolkitProj',
+    removeToolkitProj);
