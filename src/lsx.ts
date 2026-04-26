@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as sax from 'sax';
 import * as util from './util';
 import { BG3EntityDragController } from './dnd';
+import { promisify } from 'util';
+import * as cp from 'child_process';
 
 const extension = 'lsx';
 const dotExtension = '.' + extension;
@@ -216,6 +218,7 @@ export class LsxEntityStorage {
             name: m.attributes.get('Name') || '',
             id: m.attributes.get('UUID') || '',
             folder: m.attributes.get('Folder') || '',
+            attrs: m.attributes,
         } as ModMeta;
     }
 }
@@ -225,6 +228,7 @@ export interface ModMeta {
     name: string,
     id: string,
     folder: string,
+    attrs: Map<string, string>
 }
 
 
@@ -341,5 +345,50 @@ class LsxEntityItem extends vscode.TreeItem {
                 }
             ]
         };
+    }
+}
+
+
+const exec = promisify(cp.execFile);
+
+export interface LsLibFromTo {
+    from: vscode.Uri;
+    to: vscode.Uri;
+    batch: boolean,
+}
+export async function lsx2lsf(
+    targets: LsLibFromTo[],
+    divinePath?: string,
+): Promise<void> {
+    try {
+        const divine = divinePath || util.getConfig('divineexe');
+        if (!divine) {
+            util.logError('No Divine.exe. Cannot proceed');
+            return;
+        }
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Converting...",
+            cancellable: false
+        }, async () => {
+            for (const target of targets) {
+                const args = [
+                    '-g', 'bg3',
+                    '-a', (target.batch) ? 'convert-resources' : 'convert-resource',
+                    '--source', target.from.fsPath,
+                    '--destination', target.to.fsPath,
+                    '-i', 'lsx',
+                    '-o', 'lsf'
+                ];
+                await exec(divine, args);
+            }
+        });
+    } catch (e: unknown) {
+        if (typeof (e) === 'object' && e && 'message' in e) {
+            vscode.window.showErrorMessage(`${e.message}`);
+
+        } else {
+            vscode.window.showErrorMessage('error');
+        }
     }
 }

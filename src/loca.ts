@@ -38,7 +38,7 @@ export interface LocaEntity {
     localizations: Record<Language, LocaEntry>;
 }
 
-const locaRegexp = /<content\s+contentuid="(h[\da-g]+)"\s+version="(\d+)">([^<]*)</gi;
+const locaRegexp = /<content\s+contentuid="(h[\da-g]+)"\s+(version="\d+")?\s*>([^<]*)</gi;
 
 function isLoca(
     file: vscode.Uri,

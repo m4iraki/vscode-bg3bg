@@ -197,15 +197,34 @@ export async function setupConfig(
     name: string,
     errorText: string,
 ): Promise<void> {
-        const setup = 'Open Settings';
-        const selection = await logError(
-            errorText,
-            setup
+    const setup = 'Open Settings';
+    const selection = await logError(
+        errorText,
+        setup
+    );
+    if (selection === setup) {
+        vscode.commands.executeCommand(
+            'workbench.action.openSettings',
+            `bg3bg.${name}`,
         );
-        if (selection === setup) {
-            vscode.commands.executeCommand(
-                'workbench.action.openSettings',
-                `bg3bg.${name}`,
-            );
-        }
+    }
 }
+
+const saveAll = 'Save All and Continue';
+const cancel = 'Cancel';
+export async function checkUnsaved(): Promise<boolean> {
+    const hasUnsaved = vscode.workspace.textDocuments.filter(d => d.isDirty);
+    if (hasUnsaved.length > 0) {
+        const action = await logWarning(
+            `You have ${hasUnsaved.length} unsaved files. Cannot proceed!`,
+            saveAll, cancel,
+        );
+        if (action === saveAll) {
+            await vscode.workspace.saveAll();
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+

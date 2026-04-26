@@ -2,7 +2,7 @@
 	"name": "vscode-bg3bg",
 	"displayName": "BG3BG VSCode",
 	"description": "Baldur's Gate 3 Banks Helper for VSCode",
-	"version": "0.1.4",
+	"version": "0.2.0",
 	"publisher": "m4iraki",
 	"repository": "github:m4iraki/vscode-bg3bg",
 	"icon": "resources/bhaal-logo2.png",
@@ -60,6 +60,11 @@
 				"command": "bg3bg.refreshLoca",
 				"title": "Refresh Localization",
 				"icon": "$(refresh)"
+			},
+			{
+				"command": "bg3bg.createPackage",
+				"title": "Create PAK",
+				"icon": "$(file-zip)"
 			},
 			{
 				"command": "bg3bg.openBrazilianPortuguese",
@@ -268,6 +273,7 @@
 	"devDependencies": {
 		"@eslint/js": "^9.13.0",
 		"@stylistic/eslint-plugin": "^2.9.0",
+		"@types/archiver": "^7.0.0",
 		"@types/node": "^22",
 		"@types/sax": "^1.2.7",
 		"@types/uuid": "^10.0.0",
@@ -277,6 +283,7 @@
 		"typescript-eslint": "^8.26.0"
 	},
 	"dependencies": {
+		"archiver": "^7.0.1",
 		"sax": "^1.6.0",
 		"uuid": "^13.0.0"
 	}

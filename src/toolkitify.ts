@@ -1,15 +1,12 @@
 import * as util from './util';
 import * as vscode from 'vscode';
 import { Command, Commands } from './commands';
-import { LsxEntity, LsxEntityStorage, ModMeta } from './lsx';
+import * as lsx from './lsx';
 import * as paths from 'path';
-import { promisify } from 'util';
-import * as cp from 'child_process';
 import { imageDesc } from './image';
 
 const fs = vscode.workspace.fs;
 const join = vscode.Uri.joinPath;
-const exec = promisify(cp.execFile);
 
 const consts = {
     toolkitified: 'toolkitified',
@@ -28,16 +25,15 @@ const consts = {
 
 interface ToolkitifyCtx {
     root: vscode.Uri;
-    meta: ModMeta;
+    meta: lsx.ModMeta;
     toolkitified: vscode.Uri;
     tmp: vscode.Uri;
-    divinePath: string;
 };
 export async function toolkitifyStructured(
 
 ): Promise<void> {
     const root = util.rootFolder();
-    const meta = LsxEntityStorage.meta();
+    const meta = lsx.LsxEntityStorage.meta();
 
     if (!root || !meta) {
         util.logError('Cannot toolkitify project.' +
@@ -51,8 +47,8 @@ export async function toolkitifyStructured(
             'Divine.exe path not specified!');
         return;
     }
-    const dirty = await checkDirty();
-    if (dirty) {
+    const unsaved = await util.checkUnsaved();
+    if (unsaved) {
         return;
     }
     const ctx = {
@@ -60,7 +56,6 @@ export async function toolkitifyStructured(
         meta: meta,
         toolkitified: join(root, '..', meta.name + '_toolkitified'),
         tmp: join(root, '..', meta.name + '_toolkitified_tmp'),
-        divinePath: divinePath,
     } as ToolkitifyCtx;
 
     await util.rmrfDirectory(ctx.tmp);
@@ -75,14 +70,14 @@ export async function toolkitifyStructured(
     await copyConditional(ctx);
     await processProject(ctx.tmp, ctx.toolkitified, ctx);
     const lslibFT = await prepareForLslib(ctx);
-    await execLsLib(ctx, lslibFT);
+    await lsx.lsx2lsf(lslibFT, divinePath);
 
     await util.rmrfDirectory(ctx.tmp);
     await vscode.env.openExternal(ctx.toolkitified);
 }
 
 
-const projectPath = (meta: ModMeta) => [
+const projectPath = (meta: lsx.ModMeta) => [
     consts.projects,
     meta.folder,
     consts.meta,
@@ -156,19 +151,15 @@ async function copyAsIs(
     await inner(vscode.Uri.parse(''));
 }
 
-interface LsLibFromTo {
-    from: vscode.Uri;
-    to: vscode.Uri;
-    batch: boolean,
-}
+
 async function prepareForLslib(
     ctx: ToolkitifyCtx,
-): Promise<LsLibFromTo[]> {
+): Promise<lsx.LsLibFromTo[]> {
     const resourcesFT = await splitResources(ctx);
     const metadataFT = await prepareIconMetadata(ctx);
     return [...resourcesFT, metadataFT];
 }
-async function wrap(entity: LsxEntity): Promise<string> {
+async function wrap(entity: lsx.LsxEntity): Promise<string> {
     const doc = await vscode.workspace.openTextDocument(entity.document);
     const data = doc.getText(entity.range);
     return `<?xml version="1.0" encoding="utf-8"?>
@@ -185,8 +176,8 @@ async function wrap(entity: LsxEntity): Promise<string> {
 }
 async function splitResources(
     ctx: ToolkitifyCtx,
-): Promise<LsLibFromTo[]> {
-    const entities = LsxEntityStorage.getAllEntities();
+): Promise<lsx.LsLibFromTo[]> {
+    const entities = lsx.LsxEntityStorage.getAllEntities();
 
     const templatesSubPath = [consts.pub, ctx.meta.folder, consts.templates];
     const contentSubPath = [consts.pub, ctx.meta.folder, consts.content];
@@ -211,19 +202,19 @@ async function splitResources(
         from: join(ctx.tmp, ...templatesSubPath),
         to: join(ctx.toolkitified, ...templatesSubPath),
         batch: true,
-    } as LsLibFromTo;
+    } as lsx.LsLibFromTo;
     const contentFT = {
         from: join(ctx.tmp, ...contentSubPath),
         to: join(ctx.toolkitified, ...contentSubPath),
         batch: true,
-    } as LsLibFromTo;
+    } as lsx.LsLibFromTo;
 
     return [templatesFT, contentFT];
 }
 //lslib overrides existing files
 async function prepareIconMetadata(
     ctx: ToolkitifyCtx,
-): Promise<LsLibFromTo> {
+): Promise<lsx.LsLibFromTo> {
     const nonTKPath =
         '**/' +
         `${consts.pub}/` +
@@ -264,7 +255,7 @@ ${entries}
         from: tmpMetadata,
         to: join(ctx.toolkitified, consts.mods, ctx.meta.folder, consts.gui, `${consts.metadata}.lsf`),
         batch: false
-    } as LsLibFromTo;
+    } as lsx.LsLibFromTo;
 }
 async function wrapIcon(
     icon: vscode.Uri,
@@ -333,60 +324,10 @@ async function mergeToTmp(
     }
 }
 
-async function execLsLib(
-    ctx: ToolkitifyCtx,
-    targets: LsLibFromTo[],
-): Promise<void> {
-    try {
-        await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: "Converting...",
-            cancellable: false
-        }, async () => {
-            for (const target of targets) {
-                const args1 = [
-                    '-g', 'bg3',
-                    '-a', (target.batch) ? 'convert-resources' : 'convert-resource',
-                    '--source', target.from.fsPath,
-                    '--destination', target.to.fsPath,
-                    '-i', 'lsx',
-                    '-o', 'lsf'
-                ];
-                await exec(ctx.divinePath, args1);
-            }
-        });
-    } catch (e: unknown) {
-        if (typeof (e) === 'object' && e && 'message' in e) {
-            vscode.window.showErrorMessage(`${e.message}`);
-
-        } else {
-            vscode.window.showErrorMessage('error');
-        }
-    }
-}
-
-const saveAll = 'Save All and Continue';
-const cancel = 'Cancel';
-async function checkDirty(): Promise<boolean> {
-    const dirty = vscode.workspace.textDocuments.filter(d => d.isDirty);
-    if (dirty.length > 0) {
-        const action = await util.logWarning(
-            `You have ${dirty.length} unsaved files. Cannot toolkitify!`,
-            saveAll, cancel,
-        );
-        if (action === saveAll) {
-            await vscode.workspace.saveAll();
-            return false;
-        }
-        return true;
-    }
-    return false;
-}
-
 const gamedata = 'gamedata';
 function toolkitFolders(
     dataPath: string,
-    meta: ModMeta,
+    meta: lsx.ModMeta,
 ): string[] {
     const tails = [
         ['Generated', 'Public', meta.folder],
@@ -397,7 +338,7 @@ function toolkitFolders(
     return tails.map(arr => paths.resolve(dataPath, ...arr));
 }
 async function removeToolkitProj(): Promise<void> {
-    const meta = LsxEntityStorage.meta();
+    const meta = lsx.LsxEntityStorage.meta();
     if (!meta) {
         util.logError(
             'Cannot find meta.lsx to identify mod.' +
