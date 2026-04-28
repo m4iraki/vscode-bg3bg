@@ -21,8 +21,7 @@
 	],
 	"activationEvents": [
 		"onLanguage:xml",
-		"onLanguage:plaintext",
-		"onLanguage:lsx"
+		"onLanguage:plaintext"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -271,7 +270,23 @@
 				"extensions": [
 					".lsx"
 				],
-				"aliases": ["Larian Studios XML", "lsx", "LS XML"]
+				"aliases": [
+					"Larian Studios XML",
+					"lsx",
+					"LS XML"
+				],
+				"mimetypes": [
+					"text/xml",
+					"application/xml"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "lsx",
+				"scopeName": "text.xml.lsx",
+				"path": "./syntaxes/lsx.tmLanguage.json"
 			}
 		]
 	},
