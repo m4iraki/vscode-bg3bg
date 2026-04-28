@@ -30,13 +30,6 @@ export const generateToClipboard = async (f: () => string, name: string) => {
     }
 };
 
-const identifierRegexp = new RegExp(
-    util.handleRegexp.source +
-    '|' +
-    util.uuidV4Regexp.source,
-    'i'
-);
-
 const selectSmthError = 'Select some id to regenerate it!';
 
 async function handleGlobalReplace() {
@@ -116,7 +109,7 @@ function getSelectedIdentifier(editor: vscode.TextEditor): string | undefined {
         const position = editor.selection.active;
         const range = editor.document.getWordRangeAtPosition(
             position,
-            /"([-\w]+)"/);
+            /"([-\w]*)"/);
 
         if (range) {
             const text = editor.document.getText(range);
@@ -173,7 +166,7 @@ async function processFile(
     map: Record<string, string>,
 ) {
     const text = document.getText();
-    const regexp = new RegExp(identifierRegexp, 'gi');
+    const regexp = new RegExp(`"${util.identifierRegexp}"`, 'gi');
     for (const match of text.matchAll(regexp)) {
         const foundId = match[0];
         const replacementId = map[foundId];

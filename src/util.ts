@@ -171,24 +171,7 @@ export function fext(
     return (paths.extname(struri(uri)));
 }
 
-export const handleRegexp = new RegExp(
-    'h' +
-    '[0-9a-f]{8}g' +
-    '[0-9a-f]{4}g' +
-    '4[0-9a-f]{3}g' +
-    '[89ab][0-9a-f]{3}g' +
-    '[0-9a-f]{12}',
-    'i'
-);
 
-export const uuidV4Regexp = new RegExp(
-    '[0-9a-f]{8}-' +
-    '[0-9a-f]{4}-' +
-    '4[0-9a-f]{3}-' +
-    '[89ab][0-9a-f]{3}-' +
-    '[0-9a-f]{12}',
-    'i'
-);
 export function getConfig(name: string): string | undefined {
     const config = vscode.workspace.getConfiguration('bg3bg');
     return config.get<string>(name);
@@ -227,4 +210,27 @@ export async function checkUnsaved(): Promise<boolean> {
     }
     return false;
 }
+export const handleRegexp = new RegExp(
+    'h' +
+    '[0-9a-f]{8}g' +
+    '[0-9a-f]{4}g' +
+    '4[0-9a-f]{3}g' +
+    '[89ab][0-9a-f]{3}g' +
+    '[0-9a-f]{12}',
+    'i'
+);
 
+export const uuidV4Regexp = new RegExp(
+    '[0-9a-f]{8}-' +
+    '[0-9a-f]{4}-' +
+    '4[0-9a-f]{3}-' +
+    '[89ab][0-9a-f]{3}-' +
+    '[0-9a-f]{12}',
+    'i'
+);
+export const identifierRegexp = new RegExp(
+    handleRegexp.source +
+    '|' +
+    uuidV4Regexp.source,
+    'i'
+);

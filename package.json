@@ -20,7 +20,9 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onStartupFinished"
+		"onLanguage:xml",
+		"onLanguage:plaintext",
+		"onLanguage:lsx"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -262,7 +264,16 @@
 					"scope": "machine-overridable"
 				}
 			}
-		}
+		},
+		"languages": [
+			{
+				"id": "lsx",
+				"extensions": [
+					".lsx"
+				],
+				"aliases": ["Larian Studios XML", "lsx", "LS XML"]
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
