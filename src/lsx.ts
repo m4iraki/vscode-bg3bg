@@ -155,61 +155,80 @@ class LsxParser {
 }
 
 export class LsxEntityStorage {
-    private static storage = new Map<LsxEntityType, LsxEntity[]>();
+    private static cachedByTpeMap = new Map<LsxEntityType, LsxEntity[]>();
+    private static cachedByFileMap = new Map<string, LsxEntity[]>();
+    private static storage = new Map<string, LsxEntity>();
 
-    public static async updateFile(
+    public static get(id: string): LsxEntity | undefined {
+        return this.storage.get(id);
+    }
+    public static cache(): void {
+        this.cachedByTpeMap.clear();
+        this.cachedByFileMap.clear();
+        for (const [_, entity] of this.storage) {
+            const region = entity.tpe;
+            if (!this.cachedByTpeMap.has(region)) {
+                this.cachedByTpeMap.set(region, []);
+            }
+            this.cachedByTpeMap.get(region)!.push(entity);
+
+            const file = entity.document.fsPath;
+            if (!this.cachedByFileMap.has(file)) {
+                this.cachedByFileMap.set(file, []);
+            }
+            this.cachedByFileMap.get(file)!.push(entity);
+        }
+    }
+    public static updateFile(
         document: vscode.TextDocument,
-    ): Promise<void> {
+        cache: boolean,
+    ): void {
         if (!isLsx(document.uri)) { return; }
-        this.removeFile(document.uri);
+        this.rmFile(document.uri);
         const entities = LsxParser.getEntities(document);
         for (const entity of entities) {
-            const region = entity.tpe;
-            if (!this.storage.has(region)) {
-                this.storage.set(region, []);
-            }
-            this.storage.get(region)!.push(entity);
+            this.storage.set(entity.id, entity);
         }
+        if (cache) {this.cache();}
     }
 
     public static getEntityTypes(): string[] {
-        return Array.from(this.storage.keys()).sort();
+        return Array.from(this.cachedByTpeMap.keys()).sort();
     }
 
     public static getEntitiesByTypes(types: string[]): LsxEntity[] {
         const result: LsxEntity[] = [];
         for (const r of types) {
-            const entities = this.storage.get(r) || [];
+            const entities = this.cachedByTpeMap.get(r) || [];
             result.push(...entities);
         }
         return result;
     }
     public static getEntitiesByType(tpe: string): LsxEntity[] {
-        const entities = this.storage.get(tpe) || [];
+        const entities = this.cachedByTpeMap.get(tpe) || [];
         return [...entities].sort((a, b) => a.name.localeCompare(b.name));
     }
     public static getAllEntities(): LsxEntity[] {
-        return Array.from(this.storage.values()).flatMap(entities => entities);
+        return Array.from(this.storage.values());
     }
-    public static removeFile(uri: vscode.Uri): void {
+    private static rmFile(
+        uri: vscode.Uri,
+    ): void {
         if (!isLsx(uri)) { return; }
-        const uriStr = uri.fsPath;
-        for (const r of this.storage.keys()) {
-            const list = this.storage.get(r);
-            if (list) {
-                const filtered = list.filter(
-                    e => e.document.fsPath !== uriStr);
-                if (filtered.length === 0) {
-                    this.storage.delete(r);
-                } else {
-                    this.storage.set(r, filtered);
-                }
-            }
-        }
+        const entities = this.cachedByFileMap.get(uri.fsPath) || [];
+        entities.forEach(e => {
+            this.storage.delete(e.id);
+        });
+    }
+    public static removeFiles(
+        uris: readonly vscode.Uri[],
+    ): void {
+        uris.forEach(this.rmFile);
+        this.cache();
     }
 
     public static meta(): ModMeta | null {
-        const m = this.storage.get('Config')?.[0];
+        const m = this.cachedByTpeMap.get('Config')?.[0];
         if (!m) {
             return null;
         }
@@ -259,7 +278,7 @@ export class LsxEntityTreeView
             vscode.workspace.onDidSaveTextDocument(this.updateDoc.bind(this)),
             vscode.workspace.onDidOpenTextDocument(this.updateDoc.bind(this)),
             vscode.workspace.onDidDeleteFiles(e => {
-                e.files.forEach(uri => LsxEntityStorage.removeFile(uri));
+                LsxEntityStorage.removeFiles(e.files);
                 this.refresh();
             }),
             refreshCmd,
@@ -269,7 +288,7 @@ export class LsxEntityTreeView
     }
 
     async updateDoc(doc: vscode.TextDocument): Promise<void> {
-        await LsxEntityStorage.updateFile(doc);
+        await LsxEntityStorage.updateFile(doc, true);
         this.refresh();
     }
 
@@ -278,12 +297,13 @@ export class LsxEntityTreeView
         for (const file of lsxFiles) {
             try {
                 const doc = await vscode.workspace.openTextDocument(file);
-                await LsxEntityStorage.updateFile(doc);
+                await LsxEntityStorage.updateFile(doc, false);
             } catch (e) {
                 util.logWarning(
                     `Failed to parse: ${file.fsPath} because of ${e}`);
             }
         }
+        LsxEntityStorage.cache();
         this.refresh();
     }
 

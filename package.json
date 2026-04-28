@@ -2,7 +2,7 @@
 	"name": "vscode-bg3bg",
 	"displayName": "BG3BG VSCode",
 	"description": "Baldur's Gate 3 Banks Helper for VSCode",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"publisher": "m4iraki",
 	"repository": "github:m4iraki/vscode-bg3bg",
 	"icon": "resources/bhaal-logo2.png",

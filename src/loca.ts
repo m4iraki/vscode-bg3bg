@@ -55,6 +55,27 @@ export class LocaStorage {
         return [...this.entities.values()]
             .sort((a, b) => a.id.localeCompare(b.id));
     }
+    public static primaryEntry(entity: LocaEntity): LocaEntry {
+        const locas = entity.localizations;
+        const available = Object.keys(locas);
+        if (locas['English']) { return locas['English']; }
+        if (locas['Russian']) { return locas['Russian']; }
+        const sorted = available.sort((a, b) => a.localeCompare(b));
+        return locas[sorted[0] as Language];
+    }
+    public static allEntries(entity: LocaEntity): LocaEntry[] {
+        return Object.values(entity.localizations);
+    }
+    public static get(
+        handle: string,
+    ): { entity: LocaEntity, primary: LocaEntry } | undefined {
+        const entity = this.entities.get(handle);
+        if (!entity) { return; }
+        return {
+            entity: entity,
+            primary: this.primaryEntry(entity),
+        };
+    }
 
     public static async updateEntitiesInFile(
         file: vscode.Uri,
@@ -141,22 +162,13 @@ export class LocaStorage {
 
 class LocaTreeItem extends vscode.TreeItem {
     public identifier: string;
-    public static primaryEntry(entity: LocaEntity): LocaEntry {
-        const locas = entity.localizations;
-        const available = Object.keys(locas);
-        if (locas['English']) { return locas['English']; }
-        if (locas['Russian']) { return locas['Russian']; }
-        const sorted = available.sort((a, b) => a.localeCompare(b));
-        return locas[sorted[0] as Language];
-    }
-    public static allEntries(entity: LocaEntity): LocaEntry[] {
-        return Object.values(entity.localizations);
-    }
+
+
     constructor(public readonly entity: LocaEntity) {
-        const primary = LocaTreeItem.primaryEntry(entity);
+        const primary = LocaStorage.primaryEntry(entity);
         super(primary.text);
         this.identifier = entity.id;
-        const entries = LocaTreeItem.allEntries(entity);
+        const entries = LocaStorage.allEntries(entity);
         if (entries.length > 1) {
             this.contextValue = entries.map(e => e.language).join('_');
         }
