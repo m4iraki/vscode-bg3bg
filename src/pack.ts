@@ -5,14 +5,17 @@ import * as crypto from 'crypto';
 import { localization } from './loca';
 import { promisify } from 'util';
 import * as cp from 'child_process';
-import * as ffs from 'fs';
-import * as archiver from 'archiver';
 import { Command, Commands } from './commands';
+import { Zip, ZipPassThrough, strToU8 } from 'fflate';
+import * as ffs from 'fs';
 
 const fs = vscode.workspace.fs;
 const join = vscode.Uri.joinPath;
 
-async function pack(): Promise<void> {
+async function pack(
+    _progress: vscode.Progress<{message?: string, increment?: number}>,
+    token: vscode.CancellationToken,
+): Promise<void> {
     const root = util.rootFolder();
     const meta = lsx.LsxEntityStorage.meta();
     if (!root || !meta) {
@@ -39,9 +42,10 @@ async function pack(): Promise<void> {
     if (!pak) {
         util.logError('error during packing');
     } else {
-        await createZip(pak, tmp, meta);
+        await createZip(pak, tmp, meta, token);
     }
     await util.rmrfDirectory(tmp);
+    if (pak) { await vscode.env.openExternal(join(root, '..')); }
 }
 
 async function mkTmp(
@@ -133,12 +137,10 @@ interface ModsInfo {
     Mods: ModInfo[],
     MD5: string,
 }
-async function createInfo(
-    pak: vscode.Uri,
-    tmp: vscode.Uri,
+function createInfo(
+    rawMD5: string,
     meta: lsx.ModMeta,
-): Promise<vscode.Uri> {
-    const data = await fs.readFile(pak);
+): ModsInfo {
     const now = new Date();
     const mod = {
         Author: meta.author,
@@ -151,44 +153,63 @@ async function createInfo(
         Dependencies: [],
         Group: '',
     } as ModInfo;
-    const md5 =
-        crypto.createHash('md5')
-            .update(data)
-            .digest('hex')
-            .replaceAll('-', '')
-            .toLocaleLowerCase();
-    const info = {
+    const md5 = rawMD5
+        .replaceAll('-', '')
+        .toLocaleLowerCase();
+    return {
         Mods: [mod],
         MD5: md5,
     } as ModsInfo;
-    const target = join(tmp, 'info.json');
-    await fs.writeFile(target, Buffer.from(JSON.stringify(info)));
-    return target;
 }
 
 async function createZip(
     pak: vscode.Uri,
     tmp: vscode.Uri,
     meta: lsx.ModMeta,
-): Promise<void> {
+    token: vscode.CancellationToken,
+): Promise<vscode.Uri> {
     const target = join(tmp, '..', `${meta.name}.zip`);
     if (await util.fileExists(target)) {
         await fs.delete(target, { useTrash: false });
     }
-    const info = await createInfo(pak, tmp, meta);
+    const rawMD5 = crypto.createHash('md5');
+    const zip = new Zip();
     const os = ffs.createWriteStream(target.fsPath);
-    const archive = archiver.create('zip');
-    archive.pipe(os);
-    archive.file(pak.fsPath, { name: `${meta.name}.pak` });
-    archive.file(info.fsPath, { name: 'info.json' });
-    await archive.finalize();
+    zip.ondata = (err, data, final) => {
+        if (err) { throw err; }
+        os.write(data);
+        if (final) { os.end(); }
+    };
+
+    const pakEntry = new ZipPassThrough(util.fname(pak));
+    zip.add(pakEntry);
+    const is = ffs.createReadStream(pak.fsPath);
+    for await (const batch of is) {
+        if (token.isCancellationRequested) {
+            is.destroy();
+            os.destroy();
+            util.logWarning('Canceled by user');
+            break;
+        }
+        rawMD5.update(batch);
+        pakEntry.push(new Uint8Array(batch));
+    }
+    pakEntry.push(new Uint8Array(0), true);
+
+    const info = createInfo(rawMD5.digest('hex'), meta);
+    const infoEntry = new ZipPassThrough('info.json');
+        zip.add(infoEntry);
+        infoEntry.push(strToU8(JSON.stringify(info)), true);
+    zip.end();
+
+    return target;
 }
 
 async function packProject(): Promise<void> {
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
         title: "Packing Project...",
-        cancellable: false
+        cancellable: true
     }, pack);
 }
 export const createPackage: Command = Commands.create(
