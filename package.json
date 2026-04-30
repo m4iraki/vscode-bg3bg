@@ -264,31 +264,11 @@
 				}
 			}
 		},
-		"languages": [
-			{
-				"id": "lsx",
-				"extensions": [
-					".lsx"
-				],
-				"aliases": [
-					"Larian Studios XML",
-					"lsx",
-					"LS XML"
-				],
-				"mimetypes": [
-					"text/xml",
-					"application/xml"
-				],
-				"configuration": "./language-configuration.json"
+		"configurationDefaults": {
+			"files.associations": {
+				"*.lsx": "xml"
 			}
-		],
-		"grammars": [
-			{
-				"language": "lsx",
-				"scopeName": "text.xml.lsx",
-				"path": "./syntaxes/lsx.tmLanguage.json"
-			}
-		]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
