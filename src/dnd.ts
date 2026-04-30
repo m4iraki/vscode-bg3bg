@@ -25,9 +25,7 @@ type BG3EntityDropProviderResult =
 export class BG3EntityDropProvider implements vscode.DocumentDropEditProvider {
     static idRegexp = new RegExp(
         '"(' +
-        util.handleRegexp.source +
-        '|' +
-        util.uuidV4Regexp.source +
+        util.identifierRegexp.source +
         '|)"',
         'i'
     );

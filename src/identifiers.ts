@@ -144,19 +144,20 @@ async function replaceIdentifiersInProject(
     map: Record<string, string>,
 ): Promise<boolean> {
     const fileUris = await util.findFiles('lsx', 'xml', 'txt');
-    const processingTasks = fileUris.map(async (uri) => {
-        try {
-            const document = await vscode.workspace.openTextDocument(uri);
-            processFile(document, edit, map);
-        } catch (e: unknown) {
-            if (e instanceof Error) {
-                util.logError(`Failed to process ${uri.fsPath}: ${e.message}`);
-            } else {
-                util.logError(`Failed to process ${uri.fsPath}`);
+    await Promise.all(
+        fileUris.map(async (uri) => {
+            try {
+                const document = await vscode.workspace.openTextDocument(uri);
+                processFile(document, edit, map);
+            } catch (e: unknown) {
+                if (e instanceof Error) {
+                    util.logError(`Failed to process ${uri.fsPath}: ${e.message}`);
+                } else {
+                    util.logError(`Failed to process ${uri.fsPath}`);
+                }
             }
-        }
-    });
-    await Promise.all(processingTasks);
+        })
+    );
     return vscode.workspace.applyEdit(edit);
 }
 
@@ -166,8 +167,9 @@ async function processFile(
     map: Record<string, string>,
 ) {
     const text = document.getText();
-    const regexp = new RegExp(`"${util.identifierRegexp}"`, 'gi');
-    for (const match of text.matchAll(regexp)) {
+    const regexp = new RegExp(`(${util.identifierRegexp.source})`, 'gi');
+    const matches = text.matchAll(regexp);
+    for (const match of matches) {
         const foundId = match[0];
         const replacementId = map[foundId];
 
