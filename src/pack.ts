@@ -19,8 +19,7 @@ async function pack(
     const root = util.rootFolder();
     const meta = lsx.LsxEntityStorage.meta();
     if (!root || !meta) {
-        util.logError('Cannot pack project.' +
-            ' Make sure meta.lsx is at /Mods/folder/meta.lsx');
+        util.logNoProj();
         return;
     }
     const divine = util.getConfig('divineexe');

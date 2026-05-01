@@ -8,6 +8,7 @@ import { LocaTreeView } from './loca';
 import { BG3EntityDropProvider } from './dnd';
 import { createPackage } from './pack';
 import { LSIDDefinitionProvider, LSIDHoverProvider } from './definitions';
+import {cmdHotloadOn, cmdHotloadOff} from './hotload';
 
 export async function activate(context: vscode.ExtensionContext) {
   const helpersTreeProvider = new ActionsTreeProvider('bg3bg.helpers');
@@ -19,7 +20,9 @@ export async function activate(context: vscode.ExtensionContext) {
     ['Toolkitify', toolkitify, new vscode.ThemeIcon('archive')],
     ['Remove Toolkit Project',
       removeToolkitProject, new vscode.ThemeIcon('unarchive')],
-    ['Create PAK', createPackage, new vscode.ThemeIcon('file-zip')]
+    ['Create PAK', createPackage, new vscode.ThemeIcon('file-zip')],
+    ['Hotload Enable', cmdHotloadOn, new vscode.ThemeIcon('eye')],
+    ['Hotload Disable', cmdHotloadOff, new vscode.ThemeIcon('eye-closed')],
   ]);
 
   Commands.init(context);

@@ -36,8 +36,7 @@ export async function toolkitifyStructured(
     const meta = lsx.LsxEntityStorage.meta();
 
     if (!root || !meta) {
-        util.logError('Cannot toolkitify project.' +
-            ' Make sure meta.lsx is at /Mods/folder/meta.lsx');
+        util.logNoProj();
         return;
     }
     const divinePath = util.getConfig('divineexe');
@@ -340,9 +339,7 @@ function toolkitFolders(
 async function removeToolkitProj(): Promise<void> {
     const meta = lsx.LsxEntityStorage.meta();
     if (!meta) {
-        util.logError(
-            'Cannot find meta.lsx to identify mod.' +
-            ' Make sure meta.lsx is at /Mods/folder/meta.lsx');
+        util.logNoProj();
         return;
     }
     const dataPath = util.getConfig(gamedata);

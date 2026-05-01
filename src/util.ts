@@ -29,6 +29,13 @@ const logActions: Record<LogLevel, LogFuction> = {
     },
 };
 
+export function logNoProj(): Thenable<string | undefined> {
+    return logError('Cannot detect project.' +
+        ' Make sure meta.lsx is at /Mods/folder/');
+}
+
+
+
 export function newHandle(): string {
     return `h${uuidv4().replaceAll('-', 'g')}`;
 }
