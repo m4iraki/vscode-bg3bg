@@ -8,21 +8,55 @@ import { LocaTreeView } from './loca';
 import { BG3EntityDropProvider } from './dnd';
 import { createPackage } from './pack';
 import { LSIDDefinitionProvider, LSIDHoverProvider } from './definitions';
-import {cmdHotloadOn, cmdHotloadOff} from './hotload';
+import { cmdHotloadOn, cmdHotloadOff } from './hotload';
 
 export async function activate(context: vscode.ExtensionContext) {
   const helpersTreeProvider = new ActionsTreeProvider('bg3bg.helpers');
   helpersTreeProvider.createMany([
-    ['Generate UUID', identifiers.generateUUID],
-    ['Generate Handle', identifiers.generateHandle],
-    ['Regenerate Selected Id', identifiers.regenerateSelected],
-    ['Regenerate All Ids', identifiers.regenerateAll(context)],
-    ['Toolkitify', toolkitify, new vscode.ThemeIcon('archive')],
+    ['Generate UUID',
+      identifiers.generateUUID,
+      undefined,
+      'Generate new UUID and add it to Clipboard.'],
+    ['Generate Handle',
+      identifiers.generateHandle,
+      undefined,
+      'Generate new Handle and add it to Clipboard.'],
+    ['Regenerate Selected Id',
+      identifiers.regenerateSelected,
+      undefined,
+      'Replace all occurences of selected identifier ' +
+      'across project and add new value to Clipboard.'],
+    ['Regenerate All Ids',
+      identifiers.regenerateAll(context),
+      undefined,
+      'Replace all identifiers of defined entities with new ones.'],
+    ['Toolkitify',
+      toolkitify,
+      new vscode.ThemeIcon('archive'),
+      'Make a copy of project that can be used as BG3 Toolkit Project. ' +
+      'Must have Divine.exe path specified in config.'
+    ],
     ['Remove Toolkit Project',
-      removeToolkitProject, new vscode.ThemeIcon('unarchive')],
-    ['Create PAK', createPackage, new vscode.ThemeIcon('file-zip')],
-    ['Hotload Enable', cmdHotloadOn, new vscode.ThemeIcon('eye')],
-    ['Hotload Disable', cmdHotloadOff, new vscode.ThemeIcon('eye-closed')],
+      removeToolkitProject,
+      new vscode.ThemeIcon('unarchive'),
+      'Remove project files from Data. Must have Data path specified in config.'
+    ],
+    ['Create PAK',
+      createPackage,
+      new vscode.ThemeIcon('file-zip'),
+      'Package your project to .zip. ' +
+      'Must have Divine.exe path specified in config.'
+    ],
+    ['Hotload Enable',
+      cmdHotloadOn,
+      new vscode.ThemeIcon('eye'),
+      'Enable Hotloading of assets. Must have Data path specified in config.'
+    ],
+    ['Hotload Disable',
+      cmdHotloadOff,
+      new vscode.ThemeIcon('eye-closed'),
+      'Disable Hotloading of assets. Must have Data path specified in config.'
+    ],
   ]);
 
   Commands.init(context);

@@ -6,6 +6,7 @@ export class ActionItem extends vscode.TreeItem {
         public readonly label: string,
         cmd: Command,
         public readonly iconPath?: string | vscode.IconPath,
+        public readonly tooltip?: string | vscode.MarkdownString | undefined,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState =
             vscode.TreeItemCollapsibleState.None
     ) {
@@ -29,16 +30,22 @@ export class ActionsTreeProvider
     create(
         label: string,
         command: Command,
-        icon?: string | vscode.IconPath
+        icon?: string | vscode.IconPath,
+        tooltip?: string | vscode.MarkdownString | undefined,
     ): ActionItem {
-        const ai = new ActionItem(label, command, icon);
+        const ai = new ActionItem(label, command, icon, tooltip);
         this._children.push(ai);
         return ai;
     }
     createMany(
-        entries: [string, Command, (string | vscode.IconPath)?][],
+        entries: [
+            string,
+            Command,
+            (string | vscode.IconPath)?,
+            (string | vscode.MarkdownString | undefined)?,
+        ][],
     ): void {
-        entries.map(entry => this.create(entry[0], entry[1], entry[2]));
+        entries.map(entry => this.create(entry[0], entry[1], entry[2], entry[3]));
     }
     add(ai: ActionItem): ActionItem {
         this._children.push(ai);
