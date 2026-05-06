@@ -5,7 +5,7 @@ BG3 Banks Helper is a specialized extension for Visual Studio Code designed to s
 ## Features
 
 ### GoTo Definition and Hover support
-Preview name and type of locally defined entities (Template, Visual, Material etc.)
+Preview name and type of locally defined Entities (Template, Visual, Material etc.), Localizations and Stats
 
 ### Localization Explorer
 Manage all project localization strings in a centralized view.
@@ -18,6 +18,13 @@ Navigate complex .lsx structures with ease.
 - Objects are grouped by type (e.g., Textures, Template).
 - Clicking a tree item jumps directly to the corresponding node in the source code.
 - Drag'n'Drop entity directly to your lsx, xml or txt files. Pastes ID of dropped entity in your file possibly replacing id you dropped onto.
+
+### Stats Explorer
+As explorers before - all your stats are here.
+- Displayed entry name and type.
+- Hover shows detailed entry info.
+- Clicking a tree item jumps directly to the corresponding node in the source code.
+- Drag'n'Drop entity directly to your lsx, xml or txt files.
 
 ### Identifier Management
 - **Generation:** Generate new UUIDs and Handles directly to your clipboard.

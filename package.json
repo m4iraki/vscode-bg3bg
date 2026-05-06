@@ -2,7 +2,7 @@
 	"name": "vscode-bg3bg",
 	"displayName": "BG3BG VSCode",
 	"description": "Baldur's Gate 3 Banks Helper for VSCode",
-	"version": "0.3.4",
+	"version": "0.4.0",
 	"publisher": "m4iraki",
 	"repository": "github:m4iraki/vscode-bg3bg",
 	"icon": "resources/bhaal-logo2.png",
@@ -55,6 +55,11 @@
 			{
 				"command": "bg3bg.refreshEntities",
 				"title": "Refresh Entities",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "bg3bg.refreshStats",
+				"title": "Refresh Stats",
 				"icon": "$(refresh)"
 			},
 			{
@@ -160,6 +165,11 @@
 					"icon": "$(symbol-misc)"
 				},
 				{
+					"id": "bg3bg.stats",
+					"name": "Stats",
+					"icon": "$(list-tree)"
+				},
+				{
 					"id": "bg3bg.locaExplorer",
 					"name": "Localization",
 					"icon": "$(globe)"
@@ -176,6 +186,11 @@
 				{
 					"command": "bg3bg.refreshLoca",
 					"when": "view == bg3bg.locaExplorer",
+					"group": "navigation"
+				},
+				{
+					"command": "bg3bg.refreshStats",
+					"when": "view == bg3bg.stats",
 					"group": "navigation"
 				}
 			],
@@ -278,7 +293,27 @@
 			"files.associations": {
 				"*.lsx": "xml"
 			}
-		}
+		},
+		"languages": [
+			{
+				"id": "bg3stats",
+				"aliases": [
+					"BG3 Stats",
+					"bg3stats"
+				],
+				"extensions": [
+					".txt"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "bg3stats",
+				"scopeName": "source.bg3stats",
+				"path": "./syntaxes/stats.tmLanguage.json"
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

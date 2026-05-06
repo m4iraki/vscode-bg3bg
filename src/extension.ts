@@ -9,6 +9,7 @@ import { BG3EntityDropProvider } from './dnd';
 import { createPackage } from './pack';
 import { LSIDDefinitionProvider, LSIDHoverProvider } from './definitions';
 import { cmdHotloadOn, cmdHotloadOff } from './hotload';
+import {StatsTreeView} from './stats';
 
 export async function activate(context: vscode.ExtensionContext) {
   const helpersTreeProvider = new ActionsTreeProvider('bg3bg.helpers');
@@ -64,11 +65,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const entitiesTreeProvider = new LsxEntityTreeView('bg3bg.entExplorer');
   entitiesTreeProvider.init(context);
+  const statsTreeProvider = new StatsTreeView('bg3bg.stats');
+  statsTreeProvider.init(context);
   const locaTreeProvider = new LocaTreeView('bg3bg.locaExplorer');
   locaTreeProvider.init(context);
 
   const selector: vscode.DocumentSelector = [
     { language: 'xml' },
+    { language: 'bg3stats' },
     { language: 'plaintext' },
     { language: 'lsx' },
   ];

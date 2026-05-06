@@ -189,7 +189,7 @@ export class LsxEntityStorage {
         for (const entity of entities) {
             this.storage.set(entity.id, entity);
         }
-        if (cache) {this.cache();}
+        if (cache) { this.cache(); }
     }
 
     public static getEntityTypes(): string[] {
@@ -287,8 +287,8 @@ export class LsxEntityTreeView
         this.updateAll();
     }
 
-    async updateDoc(doc: vscode.TextDocument): Promise<void> {
-        await LsxEntityStorage.updateFile(doc, true);
+    updateDoc(doc: vscode.TextDocument): void {
+        LsxEntityStorage.updateFile(doc, true);
         this.refresh();
     }
 
@@ -297,7 +297,7 @@ export class LsxEntityTreeView
         for (const file of lsxFiles) {
             try {
                 const doc = await vscode.workspace.openTextDocument(file);
-                await LsxEntityStorage.updateFile(doc, false);
+                LsxEntityStorage.updateFile(doc, false);
             } catch (e) {
                 util.logWarning(
                     `Failed to parse: ${file.fsPath} because of ${e}`);

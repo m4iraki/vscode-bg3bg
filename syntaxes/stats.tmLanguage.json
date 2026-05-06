@@ -1,0 +1,45 @@
+{
+    "name": "BG3 Stats",
+    "scopeName": "source.bg3stats",
+    "patterns": [
+        {
+            "comment": "New Entry",
+            "match": "^\\s*(new\\s+entry)\\s+(\"[^\"]*\")",
+            "captures": {
+                "1": {
+                    "name": "keyword.control.bg3"
+                },
+                "2": {
+                    "name": "entity.name.type.bg3"
+                }
+            }
+        },
+        {
+            "comment": "Keywords for using and type",
+            "match": "^\\s*(type|using)\\s+(\"[^\"]*\")",
+            "captures": {
+                "1": {
+                    "name": "keyword.other.bg3"
+                },
+                "2": {
+                    "name": "variable.parameter.bg3"
+                }
+            }
+        },
+        {
+            "comment": "Stats values",
+            "match": "^\\s*(data)\\s+(\"[^\"]*\")\\s+(\"[^\"]*\")",
+            "captures": {
+                "1": {
+                    "name": "keyword.other.bg3"
+                },
+                "2": {
+                    "name": "support.type.property-name.bg3"
+                },
+                "3": {
+                    "name": "string.quoted.double.bg3"
+                }
+            }
+        }
+    ]
+}

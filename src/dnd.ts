@@ -29,6 +29,9 @@ export class BG3EntityDropProvider implements vscode.DocumentDropEditProvider {
         '|)"',
         'i'
     );
+    public static usingRegexp = /using\s+"(\w+)"/i;
+    public static statsRegexp =
+        /<attribute id="Stats" type="FixedString" value="(\w+)" \/>/i;
     provideDocumentDropEdits(
         document: vscode.TextDocument,
         position: vscode.Position,
@@ -38,13 +41,40 @@ export class BG3EntityDropProvider implements vscode.DocumentDropEditProvider {
         const dataItem = dataTransfer.get('text/plain');
         if (!dataItem) { return undefined; }
         const identifier = dataItem.value;
-        const range = document.getWordRangeAtPosition(
+        const isId = util.identifierRegexp.test(identifier);
+        if (isId) {
+            const idRange = document.getWordRangeAtPosition(
+                position,
+                BG3EntityDropProvider.idRegexp);
+            if (idRange) {
+                const edit = new vscode.DocumentDropEdit('');
+                const workspaceEdit = new vscode.WorkspaceEdit();
+                workspaceEdit.replace(document.uri, idRange, `"${identifier}"`);
+                edit.additionalEdit = workspaceEdit;
+                return edit;
+            }
+        }
+        const usingRange = document.getWordRangeAtPosition(
             position,
-            BG3EntityDropProvider.idRegexp);
-        if (range) {
+            BG3EntityDropProvider.usingRegexp);
+        if (usingRange) {
             const edit = new vscode.DocumentDropEdit('');
             const workspaceEdit = new vscode.WorkspaceEdit();
-            workspaceEdit.replace(document.uri, range, `"${identifier}"`);
+            workspaceEdit.replace(
+                document.uri, usingRange,
+                `using "${identifier}"`);
+            edit.additionalEdit = workspaceEdit;
+            return edit;
+        }
+        const statsRange = document.getWordRangeAtPosition(
+            position,
+            BG3EntityDropProvider.statsRegexp);
+        if (statsRange) {
+            const edit = new vscode.DocumentDropEdit('');
+            const workspaceEdit = new vscode.WorkspaceEdit();
+            workspaceEdit.replace(document.uri, statsRange,
+                '<attribute id="Stats" type="FixedString"' +
+                ` value="${identifier}" />`);
             edit.additionalEdit = workspaceEdit;
             return edit;
         }
