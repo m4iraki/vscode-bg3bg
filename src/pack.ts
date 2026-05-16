@@ -13,7 +13,7 @@ const fs = vscode.workspace.fs;
 const join = vscode.Uri.joinPath;
 
 async function pack(
-    _progress: vscode.Progress<{message?: string, increment?: number}>,
+    _progress: vscode.Progress<{ message?: string, increment?: number }>,
     token: vscode.CancellationToken,
 ): Promise<void> {
     const root = util.rootFolder();
@@ -44,13 +44,31 @@ async function pack(
         await createZip(pak, tmp, meta, token);
         util.logInfo('Successfuly packed project!');
     }
-    await util.rmrfDirectory(tmp);
     if (pak) {
         const extOnPak = util.getConfig('extOnPak') || false;
         if (extOnPak) {
-            await vscode.env.openExternal(join(root, '..'));
+            vscode.env.openExternal(join(root, '..'));
+        }
+        const pak2Mods = util.getConfig('pak2Mods') || false;
+        if (pak2Mods) {
+            const mods = util.getConfig('gamemods');
+            if (!mods) {
+                await util.setupConfig(
+                    'gamemods',
+                    'Mods path not specified!');
+                return;
+            }
+            try {
+                await fs.copy(
+                    pak,
+                    join(vscode.Uri.file(mods), util.fname(pak)),
+                    { overwrite: true });
+            } catch {
+                util.logError('Failed to put pak into \'Mods\'!');
+            }
         }
     }
+    util.rmrfDirectory(tmp);
 }
 
 async function mkTmp(
@@ -203,8 +221,8 @@ async function createZip(
 
     const info = createInfo(rawMD5.digest('hex'), meta);
     const infoEntry = new ZipPassThrough('info.json');
-        zip.add(infoEntry);
-        infoEntry.push(strToU8(JSON.stringify(info)), true);
+    zip.add(infoEntry);
+    infoEntry.push(strToU8(JSON.stringify(info)), true);
     zip.end();
 
     return target;
