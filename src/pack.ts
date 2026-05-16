@@ -39,12 +39,18 @@ async function pack(
 
     const pak = await createPak(tmp, meta, divine);
     if (!pak) {
-        util.logError('error during packing');
+        util.logError('error during packing!');
     } else {
         await createZip(pak, tmp, meta, token);
+        util.logInfo('Successfuly packed project!');
     }
     await util.rmrfDirectory(tmp);
-    if (pak) { await vscode.env.openExternal(join(root, '..')); }
+    if (pak) {
+        const extOnPak = util.getConfig('extOnPak') || false;
+        if (extOnPak) {
+            await vscode.env.openExternal(join(root, '..'));
+        }
+    }
 }
 
 async function mkTmp(

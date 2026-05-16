@@ -2,7 +2,7 @@
 	"name": "vscode-bg3bg",
 	"displayName": "BG3BG VSCode",
 	"description": "Baldur's Gate 3 Banks Helper for VSCode",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"publisher": "m4iraki",
 	"repository": "github:m4iraki/vscode-bg3bg",
 	"icon": "resources/bhaal-logo2.png",
@@ -285,6 +285,12 @@
 					"type": "string",
 					"default": "",
 					"description": "Path to game's 'Data' Folder",
+					"scope": "machine-overridable"
+				},
+				"bg3bg.extOnPak": {
+					"type": "boolean",
+					"default": false,
+					"description": "Open directory containing packed project on packing",
 					"scope": "machine-overridable"
 				}
 			}
